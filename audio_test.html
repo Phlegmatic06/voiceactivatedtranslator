@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <button id="btn">Start</button>
+  <script>
+    document.getElementById('btn').onclick = () => {
+      setTimeout(() => {
+        const ctx = new AudioContext();
+        console.log(ctx.state); // What is it in a timeout (like onended)?
+      }, 1000);
+    };
+  </script>
+</body>
+</html>
