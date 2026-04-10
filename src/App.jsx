@@ -5,35 +5,42 @@ import './index.css';
 
 const T = {
   ta: {
-    appTitle: "பயண வழிகாட்டி", // Travel Guide
-    tapToSpeak: "பேச மைக் பட்டனை அழுத்தவும்", // Tap to Speak
-    listening: "கவனிக்கிறது...", // Listening
-    thinking: "சிந்திக்கிறது...", // Thinking
-    speaking: "பதில் அளிக்கிறது...", // Speaking
-    completeTitle: "பயண உறுதிப்படுத்தல்", // Confirmation
-    completeDesc: "வாட்ஸ்அப் மூலம் உறுதிப்படுத்தலை அனுப்ப உள்ளோம்.", // WhatsApp confirmation prompt
-    searchingTitle: "தேடுகிறது...", // Searching
-    searchingFlights: "சிறந்த விமானங்களை தேடுகிறது", // Searching best flights
-    searchingHotels: "ஹோட்டல்களை கண்டறிகிறது", // Finding hotels
-    noFlights: "விமானங்கள் கிடைக்கவில்லை", // No flights found
-    noHotels: "ஹோட்டல்கள் கிடைக்கவில்லை", // No hotels found
-    direct: "நேரடி", // Direct
-    stops: "நிறுத்தங்கள்", // Stops
-    sentTitle: "வெற்றி!", // Success
-    sentDesc: "பயண திட்டம் உங்கள் வாட்ஸ்அப்பிற்கு அனுப்பப்பட்டுள்ளது!", // Travel plan sent to WhatsApp
-    errorDesc: "வாட்ஸ்அப்பில் அனுப்புவதில் பிழை.", // Error sending WhatsApp
+    appTitle: "வழி", // Vazhi
+    tapToSpeak: "பேச மைக் பட்டனை அழுத்தவும்",
+    listening: "கவனிக்கிறது...",
+    thinking: "சிந்திக்கிறது...",
+    speaking: "பதில் அளிக்கிறது...",
+    completeTitle: "பயண உறுதிப்படுத்தல்",
+    completeDesc: "வாட்ஸ்அப் மூலம் உறுதிப்படுத்தலை அனுப்ப உள்ளோம்.",
+    searchingTitle: "தேடுகிறது...",
+    searchingFlights: "சிறந்த விமானங்களை தேடுகிறது",
+    searchingHotels: "ஹோட்டல்களை கண்டறிகிறது",
+    noFlights: "விமானங்கள் கிடைக்கவில்லை",
+    noHotels: "ஹோட்டல்கள் கிடைக்கவில்லை",
+    direct: "நேரடி",
+    stops: "நிறுத்தங்கள்",
+    sentTitle: "வெற்றி!",
+    sentDesc: "பயண திட்டம் உங்கள் வாட்ஸ்அப்பிற்கு அனுப்பப்பட்டுள்ளது!",
+    errorDesc: "வாட்ஸ்அப்பில் அனுப்புவதில் பிழை.",
+    howToUse: "எப்படி பயன்படுத்துவது?",
+    steps: [
+      "மைக் பட்டனை அழுத்தவும்",
+      "உங்கள் இலக்கை கூறவும் (எ.கா: மதுரை)",
+      "கேள்விகளுக்கு பதில் அளிக்கவும்",
+      "வாட்ஸ்அப்பில் பயணத் திட்டத்தைப் பெறவும்!"
+    ],
     fields: {
-      source: "புறப்படும் இடம்", // Source
-      destination: "போய் சேரும் இடம்", // Destination
-      date: "தேதி", // Date
-      flights: "விமானங்கள்", // Flights
-      hotels: "ஹோட்டல்கள்", // Hotels
-      travelers: "பயணிகள்", // Travelers
-      activities: "செயல்பாடுகள்" // Activities
+      source: "புறப்படும் இடம்",
+      destination: "போய் சேரும் இடம்",
+      date: "தேதி",
+      flights: "விமானங்கள்",
+      hotels: "ஹோட்டல்கள்",
+      travelers: "பயணிகள்",
+      activities: "செயல்பாடுகள்"
     }
   },
   en: {
-    appTitle: "Travel Planner",
+    appTitle: "Vazhi",
     tapToSpeak: "Tap to Speak",
     listening: "Listening...",
     thinking: "Thinking...",
@@ -50,6 +57,13 @@ const T = {
     sentTitle: "Success!",
     sentDesc: "Travel plan has been sent to your WhatsApp!",
     errorDesc: "Failed to send to WhatsApp.",
+    howToUse: "How to Use?",
+    steps: [
+      "Tap the mic button",
+      "Speak your destination (e.g., London)",
+      "Answer follow-up questions",
+      "Receive itinerary on WhatsApp!"
+    ],
     fields: {
       source: "Source",
       destination: "Destination",
@@ -311,326 +325,360 @@ function App() {
   const hasDetails = details.source || details.destination || details.departureDate || details.travelers || details.activities;
 
   return (
-    <div className="min-h-[100dvh] bg-slate-50 flex flex-col justify-between items-center p-4 sm:p-6 font-sans">
+    <div className="relative min-h-[100dvh] bg-slate-100 flex flex-col items-center p-4 sm:p-6 font-sans overflow-x-hidden transition-all duration-500">
       
-      {/* App Header & Language Switcher */}
-      <header className="w-full max-w-md flex justify-between items-center mt-2 mb-8">
-        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
-          {t.appTitle}
-        </h1>
+      {/* Dynamic Travel Background */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
+        style={{ backgroundImage: 'url("/bg.png")' }}
+      >
+        {/* Modern Overlay for content visibility */}
+        <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px]"></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-md flex flex-col min-h-screen">
         
-        {/* Language Switcher Pill */}
-        <div className="flex bg-slate-200/70 p-1.5 rounded-full shadow-inner border border-slate-300">
-          <button 
-            onClick={() => setLang('ta')}
-            disabled={uiState !== 'idle' && !isComplete}
-            className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
-               (uiState !== 'idle' && !isComplete) ? 'opacity-50 cursor-not-allowed' : ''
-            } ${
-              lang === 'ta' 
-                ? 'bg-white text-orange-600 shadow-md ring-1 ring-slate-200/50' 
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            தமிழ்
-          </button>
-          <button 
-            onClick={() => setLang('en')}
-            disabled={uiState !== 'idle' && !isComplete}
-            className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
-               (uiState !== 'idle' && !isComplete) ? 'opacity-50 cursor-not-allowed' : ''
-            } ${
-              lang === 'en' 
-                ? 'bg-white text-orange-600 shadow-md ring-1 ring-slate-200/50' 
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            ENG
-          </button>
-        </div>
-      </header>
-
-      {/* Main Stage */}
-      <main className="w-full max-w-md flex flex-col items-center flex-grow">
-        
-        {!isComplete ? (
-          <>
-            {/* Visual Status Indicator */}
-            <div className="h-10 mb-8 flex items-center justify-center">
-              <p className={`text-2xl font-bold tracking-wide transition-all duration-300 ${
-                uiState === 'listening' ? 'text-green-600 animate-pulse' :
-                uiState === 'thinking' ? 'text-amber-500 animate-pulse' :
-                uiState === 'speaking' ? 'text-blue-500 animate-bounce' :
-                'text-slate-400'
-              }`}>
-                {uiState === 'idle' && !hasStarted ? t.tapToSpeak : t[uiState === 'idle' ? 'listening' : uiState]}
-              </p>
-            </div>
-
-            {/* Massive Microphone Button */}
-            <div className="relative mb-16 mt-2 flex items-center justify-center">
-              
-              {/* Animated Glow Rings when Listening or Speaking */}
-              {uiState === 'listening' && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="absolute w-[280px] h-[280px] bg-green-500 rounded-full opacity-20 animate-ping"></div>
-                  <div className="absolute w-[340px] h-[340px] bg-green-400 rounded-full opacity-10 animate-pulse duration-[1500ms]"></div>
-                </div>
-              )}
-
-              {uiState === 'speaking' && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="absolute w-[280px] h-[280px] bg-blue-400 rounded-full opacity-20 animate-pulse duration-700"></div>
-                </div>
-              )}
-
-              {/* Primary Button */}
-              <button 
-                onClick={handleMicClick}
-                disabled={uiState === 'thinking' || uiState === 'speaking'}
-                className={`
-                  relative z-10 flex items-center justify-center 
-                  w-56 h-56 rounded-full shadow-[0_20px_50px_rgba(249,115,22,0.3)] 
-                  transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-                  ${uiState === 'listening' 
-                    ? 'bg-gradient-to-br from-green-500 to-green-600 scale-[0.98] shadow-[inset_0_4px_15px_rgba(0,0,0,0.2)]' 
-                    : uiState === 'thinking'
-                      ? 'bg-gradient-to-br from-amber-400 to-amber-500 opacity-90 cursor-not-allowed'
-                      : uiState === 'speaking'
-                        ? 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-[0_10px_30px_rgba(59,130,246,0.4)] cursor-not-allowed'
-                        : 'bg-gradient-to-br from-orange-400 to-orange-600 hover:scale-105 hover:shadow-[0_25px_60px_rgba(249,115,22,0.4)] active:scale-95'
-                  }
-                `}
-                aria-label="Toggle Microphone"
-              >
-                <Mic 
-                  className={`w-28 h-28 text-white drop-shadow-sm transition-all duration-300 ${uiState === 'listening' ? 'animate-bounce text-green-50' : ''}`} 
-                  strokeWidth={1.5} 
-                />
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="w-full flex-grow flex flex-col items-center justify-center transition-opacity duration-1000">
-             {/* Completion / Searching State */}
-             {isSearchingTravel ? (
-               <>
-                 <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-6 shadow-inner border-2 border-orange-200 animate-pulse">
-                   <Search className="w-10 h-10 text-orange-500 animate-bounce" />
-                 </div>
-                 <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight text-center mb-4">
-                   {t.searchingTitle}
-                 </h2>
-                 <div className="flex flex-col gap-3 items-center">
-                   <div className="flex items-center gap-3 text-slate-500">
-                     <Loader2 className="w-5 h-5 animate-spin text-sky-500" />
-                     <span className="text-sm font-medium">{t.searchingFlights}</span>
-                   </div>
-                   <div className="flex items-center gap-3 text-slate-500">
-                     <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-                     <span className="text-sm font-medium">{t.searchingHotels}</span>
-                   </div>
-                 </div>
-               </>
-             ) : (
-               <>
-                 <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                   <CheckCircle className="w-12 h-12 text-green-600" />
-                 </div>
-                 <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight text-center mb-2">
-                   {uiState === 'complete_sent' ? t.sentTitle : t.completeTitle}
-                 </h2>
-                 <p className={`text-center mb-10 mx-6 leading-relaxed ${uiState === 'complete_error' ? 'text-red-500' : 'text-slate-500'}`}>
-                   {uiState === 'complete_sent' ? t.sentDesc : uiState === 'complete_error' ? t.errorDesc : t.completeDesc}
-                 </p>
-               </>
-             )}
+        {/* App Header & Language Switcher */}
+        <header className="w-full flex justify-between items-center mt-2 mb-8">
+          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+            {t.appTitle}
+          </h1>
+          
+          {/* Language Switcher Pill */}
+          <div className="flex bg-slate-200/70 p-1.5 rounded-full shadow-inner border border-slate-300">
+            <button 
+              onClick={() => setLang('ta')}
+              disabled={uiState !== 'idle' && !isComplete}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+                 (uiState !== 'idle' && !isComplete) ? 'opacity-50 cursor-not-allowed' : ''
+              } ${
+                lang === 'ta' 
+                  ? 'bg-white text-orange-600 shadow-md ring-1 ring-slate-200/50' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              தமிழ்
+            </button>
+            <button 
+              onClick={() => setLang('en')}
+              disabled={uiState !== 'idle' && !isComplete}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+                 (uiState !== 'idle' && !isComplete) ? 'opacity-50 cursor-not-allowed' : ''
+              } ${
+                lang === 'en' 
+                  ? 'bg-white text-orange-600 shadow-md ring-1 ring-slate-200/50' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              ENG
+            </button>
           </div>
-        )}
+        </header>
 
-        {/* Live Feedback / Partial Itinerary Info (Always shows when available) */}
-        {(hasDetails || isComplete) && (
-          <div className={`w-full mt-auto bg-white rounded-3xl p-6 shadow-xl border ${isComplete ? 'border-green-400 shadow-[0_0_40px_rgba(74,222,128,0.2)]' : 'border-slate-200'} relative overflow-hidden transition-all duration-700`}>
-            {/* Soft decorative blur circles */}
-            <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-60 ${isComplete ? 'bg-green-100' : 'bg-orange-50'}`}></div>
-            <div className={`absolute -left-10 -bottom-10 w-32 h-32 rounded-full blur-3xl opacity-60 ${isComplete ? 'bg-blue-100' : 'bg-blue-50'}`}></div>
-            
-            <div className="relative z-10 flex flex-col gap-4">
-              
-              <div className="grid grid-cols-2 gap-3">
-                
-                {/* Source Component */}
-                {(details.source || isComplete) && (
-                  <div className="flex flex-col gap-1 p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.fields.source}</span>
-                    <div className="flex items-center gap-2 text-slate-700 font-bold">
-                      <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                      <span className="truncate">{details.source || '---'}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Destination Component */}
-                {(details.destination || isComplete) && (
-                  <div className="flex flex-col gap-1 p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.fields.destination}</span>
-                    <div className="flex items-center gap-2 text-slate-700 font-bold">
-                      <MapPin className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      <span className="truncate">{details.destination || '---'}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Departure Date Component */}
-                {(details.departureDate || isComplete) && (
-                  <div className="flex flex-col gap-1 p-3 bg-slate-50/80 rounded-2xl border border-slate-100 col-span-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.fields.date}</span>
-                    <div className="flex items-center gap-3 text-slate-700 font-bold">
-                      <Calendar className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                      <span className="text-sm">
-                        {details.departureDate || '---'} 
-                        {details.returnDate && <span className="text-slate-400 ml-1 font-medium">(Return: {details.returnDate})</span>}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Combined Details List Component */}
-                {(details.travelers || details.activities) && (
-                  <div className="flex flex-col gap-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-100 col-span-2">
-                     {details.travelers && (
-                        <div className="flex items-start gap-3 text-slate-700 font-medium">
-                          <Users className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm leading-snug">{details.travelers}</span>
-                        </div>
-                     )}
-                     {details.activities && (
-                        <div className="flex items-start gap-3 text-slate-700 font-medium pt-2 border-t border-slate-200/60">
-                          <Activity className="w-4 h-4 text-pink-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm leading-snug">{details.activities}</span>
-                        </div>
-                     )}
-                  </div>
-                )}
-                
-                {/* Flights Component — Rich Cards */}
-                {isComplete && !isSearchingTravel && (
-                  <div className="flex flex-col gap-3 p-4 bg-sky-50/80 rounded-2xl border border-sky-100 col-span-2">
-                    <span className="text-[10px] font-bold text-sky-500 uppercase tracking-wider flex items-center gap-2">
-                      <Plane className="w-3 h-3" />
-                      {t.fields.flights}
-                    </span>
-                    {details.flights?.length > 0 ? (
-                      <div className="flex flex-col gap-3">
-                        {details.flights.map((flight, idx) => (
-                          <div key={idx} className="bg-white rounded-xl p-3 border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
-                            {/* Airline Header */}
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                {flight.airlineLogo ? (
-                                  <img src={flight.airlineLogo} alt={flight.airline} className="w-6 h-6 rounded object-contain" />
-                                ) : (
-                                  <Plane className="w-4 h-4 text-sky-500" />
-                                )}
-                                <span className="font-bold text-slate-700 text-sm">{flight.airline}</span>
-                                {flight.flightNumber && <span className="text-xs text-slate-400">{flight.flightNumber}</span>}
-                              </div>
-                              <span className="bg-sky-100 px-2.5 py-1 rounded-lg font-bold text-sky-700 text-sm">{flight.price}</span>
-                            </div>
-                            {/* Time / Route Row */}
-                            <div className="flex items-center justify-between text-xs text-slate-600">
-                              <div className="text-center">
-                                <p className="font-bold text-sm text-slate-800">{flight.departure?.split(' ').pop() || flight.departure || '—'}</p>
-                                <p className="text-[10px] text-slate-400 truncate max-w-[80px]">{flight.departureAirport || ''}</p>
-                              </div>
-                              <div className="flex-1 flex flex-col items-center mx-2">
-                                <span className="text-[10px] text-slate-400">{flight.duration}</span>
-                                <div className="w-full flex items-center">
-                                  <div className="flex-1 border-t border-dashed border-slate-300"></div>
-                                  <ArrowRight className="w-3 h-3 text-sky-400 mx-1" />
-                                  <div className="flex-1 border-t border-dashed border-slate-300"></div>
-                                </div>
-                                <span className="text-[10px] text-slate-400">
-                                  {flight.stops === 0 ? t.direct : `${flight.stops} ${t.stops}`}
-                                </span>
-                              </div>
-                              <div className="text-center">
-                                <p className="font-bold text-sm text-slate-800">{flight.arrival?.split(' ').pop() || flight.arrival || '—'}</p>
-                                <p className="text-[10px] text-slate-400 truncate max-w-[80px]">{flight.arrivalAirport || ''}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
-                        <WifiOff className="w-4 h-4" />
-                        <span>{t.noFlights}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Hotels Component — Rich Cards */}
-                {isComplete && !isSearchingTravel && (
-                  <div className="flex flex-col gap-3 p-4 bg-amber-50/80 rounded-2xl border border-amber-100 col-span-2">
-                    <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
-                      <Bed className="w-3 h-3" />
-                      {t.fields.hotels}
-                    </span>
-                    {details.hotels?.length > 0 ? (
-                      <div className="flex flex-col gap-3">
-                        {details.hotels.map((hotel, idx) => (
-                          <div key={idx} className="bg-white rounded-xl overflow-hidden border border-amber-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex">
-                              {/* Thumbnail */}
-                              {hotel.thumbnail && (
-                                <div className="w-24 h-24 flex-shrink-0">
-                                  <img src={hotel.thumbnail} alt={hotel.name} className="w-full h-full object-cover" />
-                                </div>
-                              )}
-                              {/* Details */}
-                              <div className="flex-1 p-3 flex flex-col justify-between">
-                                <div>
-                                  <div className="flex items-start justify-between gap-2">
-                                    <h4 className="font-bold text-slate-700 text-sm leading-tight">{hotel.name}</h4>
-                                    <span className="bg-amber-100 px-2 py-0.5 rounded-lg font-bold text-amber-700 text-xs whitespace-nowrap">{hotel.price}</span>
-                                  </div>
-                                  {hotel.hotelClass && <span className="text-[10px] text-amber-500 font-medium">{hotel.hotelClass}</span>}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  {hotel.ratingValue > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                                      <span className="text-xs font-bold text-slate-600">{hotel.ratingValue}</span>
-                                    </div>
-                                  )}
-                                  {hotel.reviews && <span className="text-[10px] text-slate-400">({hotel.reviews})</span>}
-                                </div>
-                                {hotel.amenities && (
-                                  <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{hotel.amenities}</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
-                        <WifiOff className="w-4 h-4" />
-                        <span>{t.noHotels}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
+        {/* Main Stage */}
+        <main className="w-full flex-grow flex flex-col items-center">
+          
+          {!isComplete ? (
+            <>
+              {/* Visual Status Indicator */}
+              <div className="h-10 mb-8 flex items-center justify-center">
+                <p className={`text-2xl font-bold tracking-wide transition-all duration-300 ${
+                  uiState === 'listening' ? 'text-green-600 animate-pulse' :
+                  uiState === 'thinking' ? 'text-amber-500 animate-pulse' :
+                  uiState === 'speaking' ? 'text-blue-500 animate-bounce' :
+                  'text-slate-400'
+                }`}>
+                  {uiState === 'idle' && !hasStarted ? t.tapToSpeak : t[uiState === 'idle' ? 'listening' : uiState]}
+                </p>
               </div>
 
+              {/* Massive Microphone Button */}
+              <div className="relative mb-16 mt-2 flex items-center justify-center">
+                
+                {/* Animated Glow Rings when Listening or Speaking */}
+                {uiState === 'listening' && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute w-[280px] h-[280px] bg-green-500 rounded-full opacity-20 animate-ping"></div>
+                    <div className="absolute w-[340px] h-[340px] bg-green-400 rounded-full opacity-10 animate-pulse duration-[1500ms]"></div>
+                  </div>
+                )}
+
+                {uiState === 'speaking' && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute w-[280px] h-[280px] bg-blue-400 rounded-full opacity-20 animate-pulse duration-700"></div>
+                  </div>
+                )}
+
+                {/* Primary Button */}
+                <button 
+                  onClick={handleMicClick}
+                  disabled={uiState === 'thinking' || uiState === 'speaking'}
+                  className={`
+                    relative z-10 flex items-center justify-center 
+                    w-56 h-56 rounded-full shadow-[0_20px_50px_rgba(249,115,22,0.3)] 
+                    transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+                    ${uiState === 'listening' 
+                      ? 'bg-gradient-to-br from-green-500 to-green-600 scale-[0.98] shadow-[inset_0_4px_15px_rgba(0,0,0,0.2)]' 
+                      : uiState === 'thinking'
+                        ? 'bg-gradient-to-br from-amber-400 to-amber-500 opacity-90 cursor-not-allowed'
+                        : uiState === 'speaking'
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-[0_10px_30px_rgba(59,130,246,0.4)] cursor-not-allowed'
+                          : 'bg-gradient-to-br from-orange-400 to-orange-600 hover:scale-105 hover:shadow-[0_25px_60px_rgba(249,115,22,0.4)] active:scale-95'
+                    }
+                  `}
+                  aria-label="Toggle Microphone"
+                >
+                  <Mic 
+                    className={`w-28 h-28 text-white drop-shadow-sm transition-all duration-300 ${uiState === 'listening' ? 'animate-bounce text-green-50' : ''}`} 
+                    strokeWidth={1.5} 
+                  />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="w-full flex-grow flex flex-col items-center justify-center transition-opacity duration-1000">
+               {/* Completion / Searching State */}
+               {isSearchingTravel ? (
+                 <>
+                   <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-6 shadow-inner border-2 border-orange-200 animate-pulse">
+                     <Search className="w-10 h-10 text-orange-500 animate-bounce" />
+                   </div>
+                   <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight text-center mb-4">
+                     {t.searchingTitle}
+                   </h2>
+                   <div className="flex flex-col gap-3 items-center">
+                     <div className="flex items-center gap-3 text-slate-500">
+                       <Loader2 className="w-5 h-5 animate-spin text-sky-500" />
+                       <span className="text-sm font-medium">{t.searchingFlights}</span>
+                     </div>
+                     <div className="flex items-center gap-3 text-slate-500">
+                       <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                       <span className="text-sm font-medium">{t.searchingHotels}</span>
+                     </div>
+                   </div>
+                 </>
+               ) : (
+                 <>
+                   <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                     <CheckCircle className="w-12 h-12 text-green-600" />
+                   </div>
+                   <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight text-center mb-2">
+                     {uiState === 'complete_sent' ? t.sentTitle : t.completeTitle}
+                   </h2>
+                   <p className={`text-center mb-10 mx-6 leading-relaxed ${uiState === 'complete_error' ? 'text-red-500' : 'text-slate-500'}`}>
+                     {uiState === 'complete_sent' ? t.sentDesc : uiState === 'complete_error' ? t.errorDesc : t.completeDesc}
+                   </p>
+                 </>
+               )}
+            </div>
+          )}
+
+          {/* Live Feedback / Partial Itinerary Info (Always shows when available) */}
+          {(hasDetails || isComplete) && (
+            <div className={`w-full bg-white rounded-3xl p-6 shadow-xl border ${isComplete ? 'border-green-400 shadow-[0_0_40px_rgba(74,222,128,0.2)]' : 'border-slate-200'} relative overflow-hidden transition-all duration-700 mb-8`}>
+              {/* Soft decorative blur circles */}
+              <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-60 ${isComplete ? 'bg-green-100' : 'bg-orange-50'}`}></div>
+              <div className={`absolute -left-10 -bottom-10 w-32 h-32 rounded-full blur-3xl opacity-60 ${isComplete ? 'bg-blue-100' : 'bg-blue-50'}`}></div>
+              
+              <div className="relative z-10 flex flex-col gap-4">
+                
+                <div className="grid grid-cols-2 gap-3">
+                  
+                  {/* Source Component */}
+                  {(details.source || isComplete) && (
+                    <div className="flex flex-col gap-1 p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.fields.source}</span>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                        <span className="truncate">{details.source || '---'}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Destination Component */}
+                  {(details.destination || isComplete) && (
+                    <div className="flex flex-col gap-1 p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.fields.destination}</span>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <MapPin className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <span className="truncate">{details.destination || '---'}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Departure Date Component */}
+                  {(details.departureDate || isComplete) && (
+                    <div className="flex flex-col gap-1 p-3 bg-slate-50/80 rounded-2xl border border-slate-100 col-span-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.fields.date}</span>
+                      <div className="flex items-center gap-3 text-slate-700 font-bold">
+                        <Calendar className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        <span className="text-sm">
+                          {details.departureDate || '---'} 
+                          {details.returnDate && <span className="text-slate-400 ml-1 font-medium">(Return: {details.returnDate})</span>}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Combined Details List Component */}
+                  {(details.travelers || details.activities) && (
+                    <div className="flex flex-col gap-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-100 col-span-2">
+                       {details.travelers && (
+                          <div className="flex items-start gap-3 text-slate-700 font-medium">
+                            <Users className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm leading-snug">{details.travelers}</span>
+                          </div>
+                       )}
+                       {details.activities && (
+                          <div className="flex items-start gap-3 text-slate-700 font-medium pt-2 border-t border-slate-200/60">
+                            <Activity className="w-4 h-4 text-pink-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm leading-snug">{details.activities}</span>
+                          </div>
+                       )}
+                    </div>
+                  )}
+                  
+                  {/* Flights Component — Rich Cards */}
+                  {isComplete && !isSearchingTravel && (
+                    <div className="flex flex-col gap-3 p-4 bg-sky-50/80 rounded-2xl border border-sky-100 col-span-2">
+                      <span className="text-[10px] font-bold text-sky-500 uppercase tracking-wider flex items-center gap-2">
+                        <Plane className="w-3 h-3" />
+                        {t.fields.flights}
+                      </span>
+                      {details.flights?.length > 0 ? (
+                        <div className="flex flex-col gap-3">
+                          {details.flights.map((flight, idx) => (
+                            <div key={idx} className="bg-white rounded-xl p-3 border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
+                              {/* Airline Header */}
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  {flight.airlineLogo ? (
+                                    <img src={flight.airlineLogo} alt={flight.airline} className="w-6 h-6 rounded object-contain" />
+                                  ) : (
+                                    <Plane className="w-4 h-4 text-sky-500" />
+                                  )}
+                                  <span className="font-bold text-slate-700 text-sm">{flight.airline}</span>
+                                  {flight.flightNumber && <span className="text-xs text-slate-400">{flight.flightNumber}</span>}
+                                </div>
+                                <span className="bg-sky-100 px-2.5 py-1 rounded-lg font-bold text-sky-700 text-sm">{flight.price}</span>
+                              </div>
+                              {/* Time / Route Row */}
+                              <div className="flex items-center justify-between text-xs text-slate-600">
+                                <div className="text-center">
+                                  <p className="font-bold text-sm text-slate-800">{flight.departure?.split(' ').pop() || flight.departure || '—'}</p>
+                                  <p className="text-[10px] text-slate-400 truncate max-w-[80px]">{flight.departureAirport || ''}</p>
+                                </div>
+                                <div className="flex-1 flex flex-col items-center mx-2">
+                                  <span className="text-[10px] text-slate-400">{flight.duration}</span>
+                                  <div className="w-full flex items-center">
+                                    <div className="flex-1 border-t border-dashed border-slate-300"></div>
+                                    <ArrowRight className="w-3 h-3 text-sky-400 mx-1" />
+                                    <div className="flex-1 border-t border-dashed border-slate-300"></div>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400">
+                                    {flight.stops === 0 ? t.direct : `${flight.stops} ${t.stops}`}
+                                  </span>
+                                </div>
+                                <div className="text-center">
+                                  <p className="font-bold text-sm text-slate-800">{flight.arrival?.split(' ').pop() || flight.arrival || '—'}</p>
+                                  <p className="text-[10px] text-slate-400 truncate max-w-[80px]">{flight.arrivalAirport || ''}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
+                          <WifiOff className="w-4 h-4" />
+                          <span>{t.noFlights}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Hotels Component — Rich Cards */}
+                  {isComplete && !isSearchingTravel && (
+                    <div className="flex flex-col gap-3 p-4 bg-amber-50/80 rounded-2xl border border-amber-100 col-span-2">
+                      <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+                        <Bed className="w-3 h-3" />
+                        {t.fields.hotels}
+                      </span>
+                      {details.hotels?.length > 0 ? (
+                        <div className="flex flex-col gap-3">
+                          {details.hotels.map((hotel, idx) => (
+                            <div key={idx} className="bg-white rounded-xl overflow-hidden border border-amber-100 shadow-sm hover:shadow-md transition-shadow">
+                              <div className="flex">
+                                {/* Thumbnail */}
+                                {hotel.thumbnail && (
+                                  <div className="w-24 h-24 flex-shrink-0">
+                                    <img src={hotel.thumbnail} alt={hotel.name} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                {/* Details */}
+                                <div className="flex-1 p-3 flex flex-col justify-between">
+                                  <div>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h4 className="font-bold text-slate-700 text-sm leading-tight">{hotel.name}</h4>
+                                      <span className="bg-amber-100 px-2 py-0.5 rounded-lg font-bold text-amber-700 text-xs whitespace-nowrap">{hotel.price}</span>
+                                    </div>
+                                    {hotel.hotelClass && <span className="text-[10px] text-amber-500 font-medium">{hotel.hotelClass}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    {hotel.ratingValue > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                                        <span className="text-xs font-bold text-slate-600">{hotel.ratingValue}</span>
+                                      </div>
+                                    )}
+                                    {hotel.reviews && <span className="text-[10px] text-slate-400">({hotel.reviews})</span>}
+                                  </div>
+                                  {hotel.amenities && (
+                                    <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{hotel.amenities}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
+                          <WifiOff className="w-4 h-4" />
+                          <span>{t.noHotels}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+
+              </div>
+            </div>
+          )}
+        </main>
+
+        {/* Localized "How to Use" Section */}
+        <footer className="w-full mt-12 mb-8">
+          <div className="bg-white/60 backdrop-blur-md rounded-3xl p-6 border border-white/40 shadow-lg">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              {t.howToUse}
+            </h3>
+            <div className="space-y-3">
+              {t.steps.map((step, i) => (
+                <div key={i} className="flex gap-3 items-start animate-in fade-in slide-in-from-left duration-500" style={{ animationDelay: `${i * 150}ms` }}>
+                  <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-orange-100 text-orange-600 rounded-lg text-xs font-bold">
+                    {i + 1}
+                  </span>
+                  <p className="text-sm text-slate-600 font-medium leading-tight pt-0.5">
+                    {step}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
-        )}
-      </main>
+        </footer>
 
+      </div>
     </div>
   );
 }
