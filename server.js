@@ -21,8 +21,8 @@ const CITY_TO_IATA = {
   // Major Indian Cities
   'chennai': 'MAA', 'madras': 'MAA', 'சென்னை': 'MAA',
   'mumbai': 'BOM', 'bombay': 'BOM', 'மும்பை': 'BOM',
-  'delhi': 'DEL', 'new delhi': 'DEL', 'தில்லி': 'DEL', 'புது டெல்லி': 'DEL',
-  'bangalore': 'BLR', 'bengaluru': 'BLR', 'பெங்களூரு': 'BLR',
+  'delhi': 'DEL', 'new delhi': 'DEL', 'தில்லி': 'DEL', 'புது டெல்லி': 'DEL', 'டெல்லி': 'DEL',
+  'bangalore': 'BLR', 'bengaluru': 'BLR', 'பெங்களூரு': 'BLR', 'பெங்களூர்': 'BLR',
   'hyderabad': 'HYD', 'ஹைதராபாத்': 'HYD',
   'kolkata': 'CCU', 'calcutta': 'CCU', 'கொல்கத்தா': 'CCU',
   'ahmedabad': 'AMD', 'அகமதாபாத்': 'AMD',
@@ -39,7 +39,7 @@ const CITY_TO_IATA = {
   'indore': 'IDR', 'இந்தோர்': 'IDR',
   'visakhapatnam': 'VTZ', 'vizag': 'VTZ', 'விசாகப்பட்டினம்': 'VTZ',
   'patna': 'PAT', 'பாட்னா': 'PAT',
-  'coimbatore': 'CJB', 'கோயம்புத்தூர்': 'CJB',
+  'coimbatore': 'CJB', 'கோயம்புத்தூர்': 'CJB', 'கோவை': 'CJB',
   'trivandrum': 'TRV', 'thiruvananthapuram': 'TRV', 'திருவனந்தபுரம்': 'TRV',
   
   // Tamil Nadu Cities (High priority for this app)

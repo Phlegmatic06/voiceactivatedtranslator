@@ -51,9 +51,14 @@ RULES:
 - Keep botSpokenReply SHORT — one or two sentences max.
 - NEVER populate flights or hotels arrays. Always leave them as empty arrays [].
 
-LANGUAGE:
-- If Active Language is "ta": botSpokenReply must be 100% Tamil only.
-- If Active Language is "en": botSpokenReply must be 100% English only.
+LANGUAGE & LOCALIZATION:
+- If Active Language is "ta":
+    * botSpokenReply must be 100% Tamil.
+    * Values for "source", "destination", "travelers", and "activities" MUST be stored in Tamil (e.g., "டெல்லி", "ஒருவர்", "சுற்றுலா").
+- If Active Language is "en":
+    * botSpokenReply must be 100% English.
+    * Values for "source", "destination", "travelers", and "activities" MUST be in English.
+- Dates (departureDate, returnDate) MUST ALWAYS be in YYYY-MM-DD format regardless of language.
 
 OUTPUT (strict JSON only, no extra text):
 { "updatedState": { "status": "in_progress"|"complete", "travelDetails": { ...all fields preserved... } }, "botSpokenReply": "text" }`;
