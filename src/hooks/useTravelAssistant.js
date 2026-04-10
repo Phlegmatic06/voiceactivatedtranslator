@@ -42,11 +42,17 @@ Step 1 → Extract DESTINATION from user's answer. Ask next: "Please tell me you
 Step 2 → Extract SOURCE from user's answer. Ask next: "What are your departure and return dates?"
 Step 3 → Extract DEPARTURE DATE and RETURN DATE from user's answer. FORMAT: YYYY-MM-DD. If the user doesn't mention a year, assume 2026. Ask next: "How many travellers will be joining?"
 Step 4 → Extract number of TRAVELERS from user's answer. Ask next: "What are your preferred activities during the trip?"
-Step 5 → Extract ACTIVITIES from user's answer. The user's spoken words ARE the activities — store them EXACTLY as transcribed. Do NOT invent, add, or substitute your own activity suggestions. Do NOT re-ask this question. Ask next: "Please provide your 10-digit WhatsApp number for confirmation."
-Step 6 → Extract WHATSAPP NUMBER from user's answer. Do NOT generate any flights or hotels — leave flights and hotels arrays EMPTY. Set status to "complete". Say: "Thank you! We are now searching for the best flights and hotels for your trip. Your itinerary will be sent to your WhatsApp shortly."
+Step 5 → Extract ACTIVITIES from user's answer. The user's spoken words ARE the activities — store them EXACTLY as transcribed. Ask next: "Please provide your 10-digit WhatsApp number for confirmation."
+Step 6 → Extract WHATSAPP NUMBER from user's answer. 
+    * LOGIC: Convert words to digits (e.g., "nine" → 9). Handle multipliers (e.g., "double five" → 55, "triple zero" → 000). 
+    * Store only the digits in the "whatsappNumber" field.
+    * IF number is valid (10+ digits): Set status to "complete". Say: "Thank you! We are now searching for the best flights and hotels. Your itinerary will be sent to your WhatsApp shortly."
+    * IF number is invalid or missing: Keep status "in_progress". Do NOT change status to complete. Say: "I'm sorry, I couldn't catch the number. Please say your 10-digit WhatsApp number again clearly."
+    * Ensure the "whatsappNumber" field reflects your best extraction attempt even if invalid, so the user can see what you heard.
 
 RULES:
 - Fill ONLY the field(s) for the current step. Keep all other fields exactly as given.
+- "travelDetails" MUST contain all 7 fields: destination, source, departureDate, returnDate, travelers, activities, whatsappNumber.
 - Your botSpokenReply should contain ONLY the next question (or summary at step 6).
 - Keep botSpokenReply SHORT — one or two sentences max.
 - NEVER populate flights or hotels arrays. Always leave them as empty arrays [].
@@ -54,11 +60,12 @@ RULES:
 LANGUAGE & LOCALIZATION:
 - If Active Language is "ta":
     * botSpokenReply must be 100% Tamil.
-    * Values for "source", "destination", "travelers", and "activities" MUST be stored in Tamil (e.g., "டெல்லி", "ஒருவர்", "சுற்றுலா").
+    * Values for "source", "destination", "travelers", and "activities" MUST be stored in Tamil.
 - If Active Language is "en":
     * botSpokenReply must be 100% English.
     * Values for "source", "destination", "travelers", and "activities" MUST be in English.
 - Dates (departureDate, returnDate) MUST ALWAYS be in YYYY-MM-DD format regardless of language.
+- "whatsappNumber" MUST be stored as a string of numeric digits (e.g., "918089456382"). If the user speaks digits as words (e.g., "eight zero eight nine..."), you MUST translate them to digits. Remove all spaces, dashes, or non-numeric characters. Do not include "+" prefix.
 
 OUTPUT (strict JSON only, no extra text):
 { "updatedState": { "status": "in_progress"|"complete", "travelDetails": { ...all fields preserved... } }, "botSpokenReply": "text" }`;
@@ -68,6 +75,8 @@ export function useTravelAssistant() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSearchingTravel, setIsSearchingTravel] = useState(false);
   const [whatsappStatus, setWhatsappStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
+  const [whatsappError, setWhatsappError] = useState(null);
+  const [sentToNumber, setSentToNumber] = useState('');
   const [error, setError] = useState(null);
 
   // Synchronous ref — updated IMMEDIATELY, no useEffect delay
@@ -183,6 +192,7 @@ export function useTravelAssistant() {
     // ==========================================
     console.log('[WhatsApp] Dispatching to:', finalDetails.whatsappNumber);
     setWhatsappStatus('sending');
+    setWhatsappError(null);
 
     try {
       const response = await fetch('http://localhost:3001/api/send-whatsapp', {
@@ -192,16 +202,23 @@ export function useTravelAssistant() {
       });
 
       if (!response.ok) {
-        const errText = await response.text();
-        console.error('[WhatsApp] Server returned error:', response.status, errText);
-        throw new Error(`Twilio error: ${response.status}`);
+        let errDetail = `Status ${response.status}`;
+        try {
+          const result = await response.json();
+          errDetail = `[Error ${result.code || 'N/A'}] ${result.details || result.error || errDetail}`;
+        } catch (e) { /* fallback to status text */ }
+        
+        console.error('[WhatsApp] Server returned error:', errDetail);
+        throw new Error(errDetail);
       }
 
       const result = await response.json();
       console.log('[WhatsApp] Sent successfully! SID:', result.sid);
+      setSentToNumber(result.recipient || '');
       setWhatsappStatus('sent');
     } catch (err) {
       console.error('[WhatsApp] Dispatch failed:', err);
+      setWhatsappError(err.message);
       setWhatsappStatus('error');
     }
   };
@@ -251,6 +268,10 @@ export function useTravelAssistant() {
       // =========================================================
       const step = getCurrentStep(currentState.travelDetails);
       
+      if (langCode === 'ta-IN') {
+        historyRef.current.push({ role: 'system', content: 'Always extract values for "source", "destination", "travelers", and "activities" in Tamil.' });
+      }
+
       // Build proper alternating message history for the LLM
       // Only keep last 4 messages (2 exchanges) to save tokens
       const recentHistory = historyRef.current.slice(-4);
@@ -313,6 +334,7 @@ export function useTravelAssistant() {
       // Step C: If conversation is complete, search + dispatch WhatsApp
       // =========================================================
       if (safeState.status === 'complete') {
+        console.log('[Step 6] Status COMPLETE. Triggering searchAndDispatch. Details:', safeState.travelDetails);
         // Fire off real search + WhatsApp in the background (non-blocking for TTS)
         searchAndDispatch(safeState.travelDetails);
       }
@@ -416,6 +438,8 @@ export function useTravelAssistant() {
     isProcessing,
     isSearchingTravel,
     whatsappStatus,
+    whatsappError,
+    sentToNumber,
     error,
     processUserAudio,
     startConversation,

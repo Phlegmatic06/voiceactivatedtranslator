@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Navigation, MapPin, Calendar, Users, Activity, CheckCircle, Plane, Bed, Star, Clock, ArrowRight, Loader2, Search, WifiOff } from 'lucide-react';
+import { 
+  Mic, Languages, MessageCircle, MapPin, Calendar, 
+  Users, Activity, Plane, Hotel, CheckCircle2, 
+  Clock, ArrowRight, Star, ExternalLink, Mail, 
+  WifiOff, AlertCircle, Loader2, Search
+} from 'lucide-react';
 import { useTravelAssistant } from './hooks/useTravelAssistant';
 import './index.css';
 
@@ -27,8 +32,13 @@ const T = {
       "மைக் பட்டனை அழுத்தவும்",
       "உங்கள் இலக்கை கூறவும் (எ.கா: மதுரை)",
       "கேள்விகளுக்கு பதில் அளிக்கவும்",
-      "வாட்ஸ்அப்பில் பயணத் திட்டத்தைப் பெறவும்!"
+      "உங்கள் பயத்திட்டம் வாட்ஸ்அப்பில் கிடைக்கும்!"
     ],
+    whatsapp: {
+      sending: "பயணத் திட்டம் அனுப்பப்படுகிறது...",
+      sent: "பயணத் திட்டம் வாட்ஸ்அப்பிற்கு அனுப்பப்பட்டது!",
+      error: "வாட்ஸ்அப் அனுப்பத் தவறிவிட்டது. மீண்டும் முயலவும்.",
+    },
     fields: {
       source: "புறப்படும் இடம்",
       destination: "போய் சேரும் இடம்",
@@ -62,8 +72,13 @@ const T = {
       "Tap the mic button",
       "Speak your destination (e.g., London)",
       "Answer follow-up questions",
-      "Receive itinerary on WhatsApp!"
+      "Get your itinerary on WhatsApp!"
     ],
+    whatsapp: {
+      sending: "Sending your itinerary...",
+      sent: "Itinerary sent to WhatsApp!",
+      error: "WhatsApp failed to send. Please try again.",
+    },
     fields: {
       source: "Source",
       destination: "Destination",
@@ -87,7 +102,7 @@ function App() {
   const currentAudioRef = useRef(null);
 
   // Import our custom architecture logic from Step 2
-  const { assistantState, isSearchingTravel, whatsappStatus, processUserAudio, startConversation } = useTravelAssistant();
+  const { assistantState, isSearchingTravel, whatsappStatus, whatsappError, sentToNumber, processUserAudio, startConversation } = useTravelAssistant();
 
   const t = T[lang];
 
@@ -458,17 +473,30 @@ function App() {
                    </div>
                  </>
                ) : (
-                 <>
-                   <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                     <CheckCircle className="w-12 h-12 text-green-600" />
-                   </div>
-                   <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight text-center mb-2">
-                     {uiState === 'complete_sent' ? t.sentTitle : t.completeTitle}
-                   </h2>
-                   <p className={`text-center mb-10 mx-6 leading-relaxed ${uiState === 'complete_error' ? 'text-red-500' : 'text-slate-500'}`}>
-                     {uiState === 'complete_sent' ? t.sentDesc : uiState === 'complete_error' ? t.errorDesc : t.completeDesc}
-                   </p>
-                 </>
+                 <div className="text-center py-6 px-4 animate-in fade-in zoom-in duration-500">
+                    <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-emerald-50 shadow-emerald-200">
+                      <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">{t.success}</h2>
+                    <p className="text-slate-500 font-medium mb-6 leading-relaxed max-w-[240px] mx-auto">{t.sent}</p>
+                    
+                    {/* WhatsApp Status Indicator */}
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border transition-all duration-300 ${
+                      whatsappStatus === 'sending' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                      whatsappStatus === 'sent' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                      whatsappStatus === 'error' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                      'bg-slate-50 text-slate-400 border-slate-100 opacity-0'
+                    }`}>
+                      {whatsappStatus === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {whatsappStatus === 'sent' && <MessageCircle className="w-4 h-4" />}
+                      {whatsappStatus === 'error' && <AlertCircle className="w-4 h-4" />}
+                      <span>
+                        {whatsappStatus === 'sending' ? t.whatsapp.sending :
+                         whatsappStatus === 'sent' ? `${t.whatsapp.sent} (${sentToNumber})` :
+                         whatsappStatus === 'error' ? (whatsappError ? `${t.whatsapp.error}: ${whatsappError}` : t.whatsapp.error) : ''}
+                      </span>
+                    </div>
+                  </div>
                )}
             </div>
           )}
@@ -600,7 +628,7 @@ function App() {
                   {isComplete && !isSearchingTravel && (
                     <div className="flex flex-col gap-3 p-4 bg-amber-50/80 rounded-2xl border border-amber-100 col-span-2">
                       <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
-                        <Bed className="w-3 h-3" />
+                        <Hotel className="w-3 h-3" />
                         {t.fields.hotels}
                       </span>
                       {details.hotels?.length > 0 ? (

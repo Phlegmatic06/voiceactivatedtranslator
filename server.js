@@ -170,6 +170,40 @@ app.post('/api/search-flights', async (req, res) => {
     }
 
     const { source, destination, departureDate, returnDate, travelers } = req.body;
+    
+    // =========================================================
+    // MOCK MODE: Bypass SerpApi if destination is "test" or "தேர்வு"
+    // =========================================================
+    const isTest = (destination && destination.toLowerCase().includes('test')) || 
+                   (destination && destination.includes('தேர்வு'));
+
+    if (isTest) {
+      console.log('[Flights] MOCK MODE ACTIVE');
+      return res.json({
+        flights: [
+          { 
+            airline: "Vazhi Air", 
+            price: "₹12,450 (Mock)", 
+            link: "https://www.google.com/travel/flights",
+            departure: "10:30 AM",
+            arrival: "01:15 PM",
+            duration: "2h 45m",
+            type: "Direct",
+            departureAirport: "Test Field"
+          },
+          { 
+            airline: "QuickJet", 
+            price: "₹14,200 (Mock)", 
+            link: "https://www.google.com/travel/flights",
+            departure: "04:00 PM",
+            arrival: "06:45 PM",
+            duration: "2h 45m",
+            type: "Direct",
+            departureAirport: "Test Field"
+          }
+        ]
+      });
+    }
 
     // Resolve IDs in parallel
     const [departureId, arrivalId] = await Promise.all([
@@ -263,6 +297,34 @@ app.post('/api/search-hotels', async (req, res) => {
 
     const { destination, checkInDate, checkOutDate, travelers } = req.body;
 
+    // =========================================================
+    // MOCK MODE: Bypass SerpApi if destination is "test" or "தேர்வு"
+    // =========================================================
+    const isTest = (destination && destination.toLowerCase().includes('test')) || 
+                   (destination && destination.includes('தேர்வு'));
+
+    if (isTest) {
+      console.log('[Hotels] MOCK MODE ACTIVE');
+      return res.json({
+        hotels: [
+          { 
+            name: "Vazhi Grand Plaza", 
+            price: "₹4,500/night (Mock)", 
+            link: "https://www.google.com/search?q=hotels",
+            rating: "4.8",
+            reviews: "1,200"
+          },
+          { 
+            name: "Comfort Test Suites", 
+            price: "₹3,200/night (Mock)", 
+            link: "https://www.google.com/search?q=hotels",
+            rating: "4.5",
+            reviews: "850"
+          }
+        ]
+      });
+    }
+
     const [resolvedDestination, checkin, checkout] = await Promise.all([
       resolveLocationId(destination), // Ensure the location is correctly identified
       Promise.resolve(parseDate(checkInDate)),
@@ -332,46 +394,67 @@ app.post('/api/search-hotels', async (req, res) => {
 // WhatsApp Delivery (Twilio) — Existing endpoint
 // =========================================================
 const formatWhatsAppMessage = (details) => {
-  return `*🌍 உங்கள் பயண உறுதிப்படுத்தல் (Travel Confirmation)*
+  const msg = `*VAZHI TRAVEL CONFIRMATION*
   
-*📍 புறப்படும் இடம் (From):* ${details.source || 'N/A'}
-*🎯 போய் சேரும் இடம் (To):* ${details.destination || 'N/A'}
-*📅 தேதி (Date):* ${details.departureDate || 'N/A'}${details.returnDate ? ` - ${details.returnDate}` : ''}
-*👥 பயணிகள் (Travelers):* ${details.travelers || 'N/A'}
+*From:* ${details.source || 'N/A'}
+*To:* ${details.destination || 'N/A'}
+*Dates:* ${details.departureDate || 'N/A'}${details.returnDate ? ` - ${details.returnDate}` : ''}
+*Travelers:* ${details.travelers || 'N/A'}
 
-*✈️ விமானங்கள் (Flights):*
+*Flights:*
 ${details.flights && details.flights.length > 0 
-  ? details.flights.map((f, i) => `${i+1}. ${f.airline} (${f.price})\n   🔗 Link: ${f.link}`).join('\n') 
-  : 'விமானங்கள் எதுவும் கிடைக்கவில்லை. (No flights found)'}
+  ? details.flights.map((f, i) => `${i+1}. ${f.airline} (${f.price})\nLink: ${f.link}`).join('\n') 
+  : 'None found.'}
 
-*🏨 ஹோட்டல்கள் (Hotels):*
+*Hotels:*
 ${details.hotels && details.hotels.length > 0 
-  ? details.hotels.map((h, i) => `${i+1}. ${h.name} (${h.price})\n   🔗 Link: ${h.link}`).join('\n') 
-  : 'ஹோட்டல்கள் எதுவும் கிடைக்கவில்லை. (No hotels found)'}
+  ? details.hotels.map((h, i) => `${i+1}. ${h.name} (${h.price})\nLink: ${h.link}`).join('\n') 
+  : 'None found.'}
 
-*🎟 செயல்பாடுகள் (Activities):* ${details.activities || 'N/A'}
+*Activities:* ${details.activities || 'N/A'}
 
-_உங்கள் பயணம் இனிதே அமைய வாழ்த்துக்கள்! (Have a great trip!)_ 🧳✨`;
+Have a great trip!`;
+
+  console.log('[WhatsApp] Message Length:', msg.length);
+  return msg;
 };
 
 app.post('/api/send-whatsapp', async (req, res) => {
   try {
     const travelDetails = req.body;
-    let number = travelDetails.whatsappNumber;
+    console.log('[WhatsApp] Internal Payload Received:', JSON.stringify(travelDetails, null, 2));
 
-    if (!number) {
-      return res.status(400).json({ error: "WhatsApp number is missing from the payload." });
+    let rawNumber = travelDetails.whatsappNumber;
+    let number = '';
+    
+    if (rawNumber) {
+      number = String(rawNumber).replace(/\D/g, '');
     }
 
-    number = number.replace(/\D/g, '');
+    if (!number || number.length < 10) {
+      console.error('[WhatsApp] FAIL: Normalized number too short or empty:', number);
+      return res.status(400).json({ 
+        error: "Invalid WhatsApp number", 
+        details: `The AI extracted "${rawNumber || 'nothing'}" as your number. Is this right? Please say your 10-digit number again.` 
+      });
+    }
 
-    if (number.length === 10) {
-      number = `+91${number}`;
-    } else if (number.length === 12 && number.startsWith('91')) {
-      number = `+${number}`;
+    // Normalize (if not already prefixed by fallback)
+    if (!number.startsWith('+')) {
+      if (number.length === 10) {
+        number = `+91${number}`;
+      } else if (number.length === 12 && number.startsWith('91')) {
+        number = `+${number}`;
+      } else {
+        number = `+${number}`;
+      }
     }
 
     const messageBody = formatWhatsAppMessage(travelDetails);
+    
+    console.log('[WhatsApp] Resolved Number String:', number);
+    console.log('[WhatsApp] Message Body:\n', messageBody);
+    console.log('[WhatsApp] Message Length:', messageBody.length);
 
     const message = await client.messages.create({
       body: messageBody,
@@ -379,12 +462,22 @@ app.post('/api/send-whatsapp', async (req, res) => {
       to: `whatsapp:${number}`
     });
 
-    console.log(`WhatsApp message successfully sequenced. SID: ${message.sid}`);
-    res.status(200).json({ success: true, sid: message.sid });
+    console.log(`[WhatsApp] SUCCESS! SID: ${message.sid}`);
+    res.status(200).json({ success: true, sid: message.sid, recipient: number });
 
   } catch (error) {
-    console.error("Twilio Delivery Error:", error);
-    res.status(500).json({ error: "Failed to dispatch WhatsApp message via Twilio." });
+    console.error("[WhatsApp] TWILIO API ERROR:", error);
+    
+    // Extract specific Twilio error details if they exist
+    const errorDetail = error.message || "Unknown Twilio error";
+    const errorCode = error.code || "N/A";
+
+    res.status(500).json({ 
+      error: "WhatsApp Delivery Failed",
+      details: errorDetail,
+      code: errorCode,
+      recipient: number
+    });
   }
 });
 
