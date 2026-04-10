@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Navigation, MapPin, Calendar, Users, Activity, CheckCircle, Plane, Bed } from 'lucide-react';
+import { Mic, Navigation, MapPin, Calendar, Users, Activity, CheckCircle, Plane, Bed, Star, Clock, ArrowRight, Loader2, Search, WifiOff } from 'lucide-react';
 import { useTravelAssistant } from './hooks/useTravelAssistant';
 import './index.css';
 
@@ -12,6 +12,13 @@ const T = {
     speaking: "பதில் அளிக்கிறது...", // Speaking
     completeTitle: "பயண உறுதிப்படுத்தல்", // Confirmation
     completeDesc: "வாட்ஸ்அப் மூலம் உறுதிப்படுத்தலை அனுப்ப உள்ளோம்.", // WhatsApp confirmation prompt
+    searchingTitle: "தேடுகிறது...", // Searching
+    searchingFlights: "சிறந்த விமானங்களை தேடுகிறது", // Searching best flights
+    searchingHotels: "ஹோட்டல்களை கண்டறிகிறது", // Finding hotels
+    noFlights: "விமானங்கள் கிடைக்கவில்லை", // No flights found
+    noHotels: "ஹோட்டல்கள் கிடைக்கவில்லை", // No hotels found
+    direct: "நேரடி", // Direct
+    stops: "நிறுத்தங்கள்", // Stops
     sentTitle: "வெற்றி!", // Success
     sentDesc: "பயண திட்டம் உங்கள் வாட்ஸ்அப்பிற்கு அனுப்பப்பட்டுள்ளது!", // Travel plan sent to WhatsApp
     errorDesc: "வாட்ஸ்அப்பில் அனுப்புவதில் பிழை.", // Error sending WhatsApp
@@ -33,6 +40,13 @@ const T = {
     speaking: "Speaking...",
     completeTitle: "Itinerary Confirmation",
     completeDesc: "We are ready to send this itinerary to your WhatsApp.",
+    searchingTitle: "Searching...",
+    searchingFlights: "Finding the best flights for you",
+    searchingHotels: "Discovering top-rated hotels",
+    noFlights: "No flights found for this route",
+    noHotels: "No hotels found for this destination",
+    direct: "Direct",
+    stops: "stop(s)",
     sentTitle: "Success!",
     sentDesc: "Travel plan has been sent to your WhatsApp!",
     errorDesc: "Failed to send to WhatsApp.",
@@ -57,39 +71,23 @@ function App() {
   const audioChunksRef = useRef([]);
   const clickLockRef = useRef(false);
   const currentAudioRef = useRef(null);
-  const whatsappSentRef = useRef(false);
 
   // Import our custom architecture logic from Step 2
-  const { assistantState, processUserAudio, startConversation } = useTravelAssistant();
+  const { assistantState, isSearchingTravel, whatsappStatus, processUserAudio, startConversation } = useTravelAssistant();
 
   const t = T[lang];
 
   // The Completion Trigger hook — fires ONCE when status becomes 'complete'
   useEffect(() => {
     if (assistantState.status !== 'complete') return;
-    if (whatsappSentRef.current) return; // GUARD: only send once per session
-    whatsappSentRef.current = true;
-
     setUiState('complete');
-
-    const dispatchWhatsAppItinerary = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/send-whatsapp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(assistantState.travelDetails)
-        });
-        
-        if (!response.ok) throw new Error("Failed connecting to Twilio Backend");
-        setUiState('complete_sent');
-      } catch (err) {
-        console.error("Delivery sequence failed:", err);
-        setUiState('complete_error');
-      }
-    };
-
-    dispatchWhatsAppItinerary();
   }, [assistantState.status]);
+
+  // Drive UI from hook's whatsappStatus (hook handles dispatch internally)
+  useEffect(() => {
+    if (whatsappStatus === 'sent') setUiState('complete_sent');
+    if (whatsappStatus === 'error') setUiState('complete_error');
+  }, [whatsappStatus]);
 
   const startRecording = async () => {
     try {
@@ -414,17 +412,39 @@ function App() {
           </>
         ) : (
           <div className="w-full flex-grow flex flex-col items-center justify-center transition-opacity duration-1000">
-             {/* Completion Replaces Microphone */}
-             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-               <CheckCircle className="w-12 h-12 text-green-600" />
-             </div>
-             <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight text-center mb-2">
-               {uiState === 'complete_sent' ? t.sentTitle : t.completeTitle}
-             </h2>
-             <p className={`text-center mb-10 mx-6 leading-relaxed ${uiState === 'complete_error' ? 'text-red-500' : 'text-slate-500'}`}>
-               {uiState === 'complete_sent' ? t.sentDesc : uiState === 'complete_error' ? t.errorDesc : t.completeDesc}
-             </p>
-
+             {/* Completion / Searching State */}
+             {isSearchingTravel ? (
+               <>
+                 <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-6 shadow-inner border-2 border-orange-200 animate-pulse">
+                   <Search className="w-10 h-10 text-orange-500 animate-bounce" />
+                 </div>
+                 <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight text-center mb-4">
+                   {t.searchingTitle}
+                 </h2>
+                 <div className="flex flex-col gap-3 items-center">
+                   <div className="flex items-center gap-3 text-slate-500">
+                     <Loader2 className="w-5 h-5 animate-spin text-sky-500" />
+                     <span className="text-sm font-medium">{t.searchingFlights}</span>
+                   </div>
+                   <div className="flex items-center gap-3 text-slate-500">
+                     <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                     <span className="text-sm font-medium">{t.searchingHotels}</span>
+                   </div>
+                 </div>
+               </>
+             ) : (
+               <>
+                 <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                   <CheckCircle className="w-12 h-12 text-green-600" />
+                 </div>
+                 <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight text-center mb-2">
+                   {uiState === 'complete_sent' ? t.sentTitle : t.completeTitle}
+                 </h2>
+                 <p className={`text-center mb-10 mx-6 leading-relaxed ${uiState === 'complete_error' ? 'text-red-500' : 'text-slate-500'}`}>
+                   {uiState === 'complete_sent' ? t.sentDesc : uiState === 'complete_error' ? t.errorDesc : t.completeDesc}
+                 </p>
+               </>
+             )}
           </div>
         )}
 
@@ -493,45 +513,114 @@ function App() {
                   </div>
                 )}
                 
-                {/* Flights Component */}
-                {details.flights?.length > 0 && (
-                  <div className="flex flex-col gap-2 p-4 bg-sky-50/80 rounded-2xl border border-sky-100 col-span-2">
-                    <span className="text-[10px] font-bold text-sky-500 uppercase tracking-wider">{t.fields.flights}</span>
-                    <div className="flex flex-col gap-2">
-                       {details.flights.map((flight, idx) => (
-                         <div key={idx} className="flex flex-row items-center justify-between text-sm py-2 border-b border-sky-100/50 last:border-0">
-                           <div className="flex items-center gap-3">
-                             <Plane className="w-4 h-4 text-sky-500" />
-                             <span className="font-bold text-slate-700">{flight.airline}</span>
-                           </div>
-                           <div className="flex items-center gap-3 text-slate-500 font-medium">
-                             <span>{flight.time}</span>
-                             <span className="bg-sky-100 px-2 rounded-md font-bold text-sky-600">{flight.price}</span>
-                           </div>
-                         </div>
-                       ))}
-                    </div>
+                {/* Flights Component — Rich Cards */}
+                {isComplete && !isSearchingTravel && (
+                  <div className="flex flex-col gap-3 p-4 bg-sky-50/80 rounded-2xl border border-sky-100 col-span-2">
+                    <span className="text-[10px] font-bold text-sky-500 uppercase tracking-wider flex items-center gap-2">
+                      <Plane className="w-3 h-3" />
+                      {t.fields.flights}
+                    </span>
+                    {details.flights?.length > 0 ? (
+                      <div className="flex flex-col gap-3">
+                        {details.flights.map((flight, idx) => (
+                          <div key={idx} className="bg-white rounded-xl p-3 border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
+                            {/* Airline Header */}
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {flight.airlineLogo ? (
+                                  <img src={flight.airlineLogo} alt={flight.airline} className="w-6 h-6 rounded object-contain" />
+                                ) : (
+                                  <Plane className="w-4 h-4 text-sky-500" />
+                                )}
+                                <span className="font-bold text-slate-700 text-sm">{flight.airline}</span>
+                                {flight.flightNumber && <span className="text-xs text-slate-400">{flight.flightNumber}</span>}
+                              </div>
+                              <span className="bg-sky-100 px-2.5 py-1 rounded-lg font-bold text-sky-700 text-sm">{flight.price}</span>
+                            </div>
+                            {/* Time / Route Row */}
+                            <div className="flex items-center justify-between text-xs text-slate-600">
+                              <div className="text-center">
+                                <p className="font-bold text-sm text-slate-800">{flight.departure?.split(' ').pop() || flight.departure || '—'}</p>
+                                <p className="text-[10px] text-slate-400 truncate max-w-[80px]">{flight.departureAirport || ''}</p>
+                              </div>
+                              <div className="flex-1 flex flex-col items-center mx-2">
+                                <span className="text-[10px] text-slate-400">{flight.duration}</span>
+                                <div className="w-full flex items-center">
+                                  <div className="flex-1 border-t border-dashed border-slate-300"></div>
+                                  <ArrowRight className="w-3 h-3 text-sky-400 mx-1" />
+                                  <div className="flex-1 border-t border-dashed border-slate-300"></div>
+                                </div>
+                                <span className="text-[10px] text-slate-400">
+                                  {flight.stops === 0 ? t.direct : `${flight.stops} ${t.stops}`}
+                                </span>
+                              </div>
+                              <div className="text-center">
+                                <p className="font-bold text-sm text-slate-800">{flight.arrival?.split(' ').pop() || flight.arrival || '—'}</p>
+                                <p className="text-[10px] text-slate-400 truncate max-w-[80px]">{flight.arrivalAirport || ''}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
+                        <WifiOff className="w-4 h-4" />
+                        <span>{t.noFlights}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Hotels Component */}
-                {details.hotels?.length > 0 && (
-                  <div className="flex flex-col gap-2 p-4 bg-amber-50/80 rounded-2xl border border-amber-100 col-span-2">
-                    <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">{t.fields.hotels}</span>
-                    <div className="flex flex-col gap-2">
-                       {details.hotels.map((hotel, idx) => (
-                         <div key={idx} className="flex flex-row items-center justify-between text-sm py-2 border-b border-amber-100/50 last:border-0">
-                           <div className="flex items-center gap-3">
-                             <Bed className="w-4 h-4 text-amber-500" />
-                             <span className="font-bold text-slate-700">{hotel.name}</span>
-                           </div>
-                           <div className="flex items-center gap-3 text-slate-500 font-medium">
-                             <span>{hotel.rating}</span>
-                             <span className="bg-amber-100 px-2 rounded-md font-bold text-amber-600">{hotel.price}</span>
-                           </div>
-                         </div>
-                       ))}
-                    </div>
+                {/* Hotels Component — Rich Cards */}
+                {isComplete && !isSearchingTravel && (
+                  <div className="flex flex-col gap-3 p-4 bg-amber-50/80 rounded-2xl border border-amber-100 col-span-2">
+                    <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+                      <Bed className="w-3 h-3" />
+                      {t.fields.hotels}
+                    </span>
+                    {details.hotels?.length > 0 ? (
+                      <div className="flex flex-col gap-3">
+                        {details.hotels.map((hotel, idx) => (
+                          <div key={idx} className="bg-white rounded-xl overflow-hidden border border-amber-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex">
+                              {/* Thumbnail */}
+                              {hotel.thumbnail && (
+                                <div className="w-24 h-24 flex-shrink-0">
+                                  <img src={hotel.thumbnail} alt={hotel.name} className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                              {/* Details */}
+                              <div className="flex-1 p-3 flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <h4 className="font-bold text-slate-700 text-sm leading-tight">{hotel.name}</h4>
+                                    <span className="bg-amber-100 px-2 py-0.5 rounded-lg font-bold text-amber-700 text-xs whitespace-nowrap">{hotel.price}</span>
+                                  </div>
+                                  {hotel.hotelClass && <span className="text-[10px] text-amber-500 font-medium">{hotel.hotelClass}</span>}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  {hotel.ratingValue > 0 && (
+                                    <div className="flex items-center gap-1">
+                                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                                      <span className="text-xs font-bold text-slate-600">{hotel.ratingValue}</span>
+                                    </div>
+                                  )}
+                                  {hotel.reviews && <span className="text-[10px] text-slate-400">({hotel.reviews})</span>}
+                                </div>
+                                {hotel.amenities && (
+                                  <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{hotel.amenities}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
+                        <WifiOff className="w-4 h-4" />
+                        <span>{t.noHotels}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 

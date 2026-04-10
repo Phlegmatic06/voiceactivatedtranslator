@@ -40,15 +40,16 @@ You will receive:
 YOUR JOB for each step:
 Step 1 → Extract DESTINATION from user's answer. Ask next: "Please tell me your origin city or location."
 Step 2 → Extract SOURCE from user's answer. Ask next: "What are your departure and return dates?"
-Step 3 → Extract DEPARTURE DATE and RETURN DATE from user's answer. Ask next: "How many travellers will be joining?"
+Step 3 → Extract DEPARTURE DATE and RETURN DATE from user's answer. FORMAT: YYYY-MM-DD. If the user doesn't mention a year, assume 2026. Ask next: "How many travellers will be joining?"
 Step 4 → Extract number of TRAVELERS from user's answer. Ask next: "What are your preferred activities during the trip?"
-Step 5 → Extract ACTIVITIES from user's answer. Accept ANY answer as valid activities (sightseeing, relaxing, exploring, etc). Do NOT re-ask this question. Store whatever the user said. Ask next: "Please provide your 10-digit WhatsApp number for confirmation."
-Step 6 → Extract WHATSAPP NUMBER from user's answer. Then generate 2 mock flights (fields: airline, time, price) and 2 mock hotels (fields: name, rating, price). Set status to "complete". Say a short goodbye/thank-you message.
+Step 5 → Extract ACTIVITIES from user's answer. The user's spoken words ARE the activities — store them EXACTLY as transcribed. Do NOT invent, add, or substitute your own activity suggestions. Do NOT re-ask this question. Ask next: "Please provide your 10-digit WhatsApp number for confirmation."
+Step 6 → Extract WHATSAPP NUMBER from user's answer. Do NOT generate any flights or hotels — leave flights and hotels arrays EMPTY. Set status to "complete". Say: "Thank you! We are now searching for the best flights and hotels for your trip. Your itinerary will be sent to your WhatsApp shortly."
 
 RULES:
 - Fill ONLY the field(s) for the current step. Keep all other fields exactly as given.
 - Your botSpokenReply should contain ONLY the next question (or summary at step 6).
 - Keep botSpokenReply SHORT — one or two sentences max.
+- NEVER populate flights or hotels arrays. Always leave them as empty arrays [].
 
 LANGUAGE:
 - If Active Language is "ta": botSpokenReply must be 100% Tamil only.
@@ -60,6 +61,8 @@ OUTPUT (strict JSON only, no extra text):
 export function useTravelAssistant() {
   const [assistantState, setAssistantState] = useState(INITIAL_STATE);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSearchingTravel, setIsSearchingTravel] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
   const [error, setError] = useState(null);
 
   // Synchronous ref — updated IMMEDIATELY, no useEffect delay
@@ -72,6 +75,130 @@ export function useTravelAssistant() {
   const commitState = (newState) => {
     stateRef.current = newState;
     setAssistantState(newState);
+  };
+
+  /**
+   * After the conversation completes, search for real flights and hotels
+   * using the SerpApi-powered backend endpoints.
+   */
+  /**
+   * After the conversation completes:
+   * 1. Search for real flights and hotels via SerpApi
+   * 2. Merge results into state
+   * 3. Dispatch the WhatsApp itinerary with the FINAL data
+   */
+  const searchAndDispatch = async (travelDetails) => {
+    setIsSearchingTravel(true);
+
+    let flights = [];
+    let hotels = [];
+
+    try {
+      console.log('[Search] Starting parallel flight + hotel search...');
+      console.log('[Search] Source:', travelDetails.source, '→ Destination:', travelDetails.destination);
+      console.log('[Search] Dates:', travelDetails.departureDate, '→', travelDetails.returnDate);
+
+      const [flightsRes, hotelsRes] = await Promise.allSettled([
+        fetch('http://localhost:3001/api/search-flights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: travelDetails.source,
+            destination: travelDetails.destination,
+            departureDate: travelDetails.departureDate,
+            returnDate: travelDetails.returnDate,
+            travelers: travelDetails.travelers,
+          })
+        }),
+        fetch('http://localhost:3001/api/search-hotels', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destination: travelDetails.destination,
+            checkInDate: travelDetails.departureDate,
+            checkOutDate: travelDetails.returnDate,
+            travelers: travelDetails.travelers,
+          })
+        })
+      ]);
+
+      if (flightsRes.status === 'fulfilled' && flightsRes.value.ok) {
+        const flightsData = await flightsRes.value.json();
+        flights = flightsData.flights || [];
+        console.log('[Search] Flights:', flights.length, 'results');
+      } else {
+        const reason = flightsRes.status === 'rejected' 
+          ? flightsRes.reason?.message 
+          : `HTTP ${flightsRes.value?.status}`;
+        console.warn('[Search] Flights failed:', reason);
+        // Try to log server error message
+        if (flightsRes.status === 'fulfilled' && !flightsRes.value.ok) {
+          try {
+            const errBody = await flightsRes.value.json();
+            console.warn('[Search] Flights error detail:', errBody);
+          } catch (e) { /* ignore */ }
+        }
+      }
+
+      if (hotelsRes.status === 'fulfilled' && hotelsRes.value.ok) {
+        const hotelsData = await hotelsRes.value.json();
+        hotels = hotelsData.hotels || [];
+        console.log('[Search] Hotels:', hotels.length, 'results');
+      } else {
+        const reason = hotelsRes.status === 'rejected'
+          ? hotelsRes.reason?.message
+          : `HTTP ${hotelsRes.value?.status}`;
+        console.warn('[Search] Hotels failed:', reason);
+        if (hotelsRes.status === 'fulfilled' && !hotelsRes.value.ok) {
+          try {
+            const errBody = await hotelsRes.value.json();
+            console.warn('[Search] Hotels error detail:', errBody);
+          } catch (e) { /* ignore */ }
+        }
+      }
+    } catch (err) {
+      console.error('[Search] Network error:', err);
+    }
+
+    // Merge real data into state
+    const finalDetails = {
+      ...travelDetails,
+      flights,
+      hotels,
+    };
+    const updatedState = {
+      ...stateRef.current,
+      travelDetails: finalDetails,
+    };
+    commitState(updatedState);
+    setIsSearchingTravel(false);
+
+    // ==========================================
+    // DISPATCH WHATSAPP — with the final data
+    // ==========================================
+    console.log('[WhatsApp] Dispatching to:', finalDetails.whatsappNumber);
+    setWhatsappStatus('sending');
+
+    try {
+      const response = await fetch('http://localhost:3001/api/send-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalDetails)
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('[WhatsApp] Server returned error:', response.status, errText);
+        throw new Error(`Twilio error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('[WhatsApp] Sent successfully! SID:', result.sid);
+      setWhatsappStatus('sent');
+    } catch (err) {
+      console.error('[WhatsApp] Dispatch failed:', err);
+      setWhatsappStatus('error');
+    }
   };
 
   const processUserAudio = async (audioBlob, activeLanguage) => {
@@ -162,7 +289,10 @@ export function useTravelAssistant() {
         status: updatedState?.status || currentState.status,
         travelDetails: {
           ...currentState.travelDetails,
-          ...((updatedState && updatedState.travelDetails) || {})
+          ...((updatedState && updatedState.travelDetails) || {}),
+          // Force flights/hotels to stay empty until real API populates them
+          flights: [],
+          hotels: [],
         }
       };
       
@@ -175,7 +305,15 @@ export function useTravelAssistant() {
       );
 
       // =========================================================
-      // Step C: Sarvam TTS (The Mouth)
+      // Step C: If conversation is complete, search + dispatch WhatsApp
+      // =========================================================
+      if (safeState.status === 'complete') {
+        // Fire off real search + WhatsApp in the background (non-blocking for TTS)
+        searchAndDispatch(safeState.travelDetails);
+      }
+
+      // =========================================================
+      // Step D: Sarvam TTS (The Mouth)
       // =========================================================
       const ttsResponse = await fetch('/api/sarvam/text-to-speech', {
         method: 'POST',
@@ -264,11 +402,15 @@ export function useTravelAssistant() {
   const resetState = () => {
     commitState(INITIAL_STATE);
     historyRef.current = [];
+    setIsSearchingTravel(false);
+    setWhatsappStatus(null);
   };
 
   return {
     assistantState,
     isProcessing,
+    isSearchingTravel,
+    whatsappStatus,
     error,
     processUserAudio,
     startConversation,
