@@ -22,6 +22,7 @@ const T = {
     searchingHotels: "ஹோட்டல்களை கண்டறிகிறது",
     noFlights: "விமானங்கள் கிடைக்கவில்லை",
     noHotels: "ஹோட்டல்கள் கிடைக்கவில்லை",
+    noThingsToDo: "பரிந்துரைகள் கிடைக்கவில்லை",
     direct: "நேரடி",
     stops: "நிறுத்தங்கள்",
     sentTitle: "வெற்றி!",
@@ -46,7 +47,8 @@ const T = {
       flights: "விமானங்கள்",
       hotels: "ஹோட்டல்கள்",
       travelers: "பயணிகள்",
-      activities: "செயல்பாடுகள்"
+      activities: "செயல்பாடுகள்",
+      thingsToDo: "செய்ய வேண்டியவை"
     }
   },
   en: {
@@ -62,6 +64,7 @@ const T = {
     searchingHotels: "Discovering top-rated hotels",
     noFlights: "No flights found for this route",
     noHotels: "No hotels found for this destination",
+    noThingsToDo: "No recommendations found",
     direct: "Direct",
     stops: "stop(s)",
     sentTitle: "Success!",
@@ -86,7 +89,8 @@ const T = {
       flights: "Flights",
       hotels: "Hotels",
       travelers: "Travelers",
-      activities: "Activities"
+      activities: "Activities",
+      thingsToDo: "Things to Do"
     }
   }
 };
@@ -672,6 +676,64 @@ function App() {
                         <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
                           <WifiOff className="w-4 h-4" />
                           <span>{t.noHotels}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Things to Do Component — Rich Cards */}
+                  {isComplete && !isSearchingTravel && (
+                    <div className="flex flex-col gap-3 p-4 bg-emerald-50/80 rounded-2xl border border-emerald-100 col-span-2">
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-2">
+                        <Activity className="w-3 h-3" />
+                        {t.fields.thingsToDo}
+                      </span>
+                      {details.thingsToDo?.length > 0 ? (
+                        <div className="flex flex-col gap-3">
+                          {details.thingsToDo.map((thing, idx) => (
+                            <div key={idx} className="bg-white rounded-xl overflow-hidden border border-emerald-100 shadow-sm hover:shadow-md transition-shadow">
+                              <div className="flex">
+                                {/* Thumbnail */}
+                                {thing.thumbnail && (
+                                  <div className="w-24 h-24 flex-shrink-0">
+                                    <img src={thing.thumbnail} alt={thing.name} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                {/* Details */}
+                                <div className="flex-1 p-3 flex flex-col justify-between">
+                                  <div>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h4 className="font-bold text-slate-700 text-sm leading-tight">{thing.name}</h4>
+                                    </div>
+                                    {thing.description && (
+                                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-snug">{thing.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between mt-1.5">
+                                    <div className="flex items-center gap-2">
+                                      {thing.rating && thing.rating !== 'N/A' && (
+                                        <div className="flex items-center gap-1">
+                                          <Star className="w-3 h-3 text-emerald-400 fill-emerald-400" />
+                                          <span className="text-xs font-bold text-slate-600">{thing.rating}</span>
+                                        </div>
+                                      )}
+                                      {thing.reviews && <span className="text-[10px] text-slate-400">({thing.reviews})</span>}
+                                    </div>
+                                    {thing.link && (
+                                      <a href={thing.link} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-600">
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
+                          <WifiOff className="w-4 h-4" />
+                          <span>{t.noThingsToDo}</span>
                         </div>
                       )}
                     </div>

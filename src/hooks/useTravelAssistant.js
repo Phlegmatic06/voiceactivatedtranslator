@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import Groq from 'groq-sdk';
 
 const INITIAL_STATE = {
-  status: "in_progress", 
+  status: "in_progress",
   travelDetails: {
     source: null,
     destination: null,
@@ -12,7 +12,8 @@ const INITIAL_STATE = {
     activities: null,
     whatsappNumber: null,
     flights: [],
-    hotels: []
+    hotels: [],
+    thingsToDo: []
   }
 };
 
@@ -81,7 +82,7 @@ export function useTravelAssistant() {
 
   // Synchronous ref — updated IMMEDIATELY, no useEffect delay
   const stateRef = useRef(INITIAL_STATE);
-  
+
   // Conversation history as proper alternating messages for Groq
   const historyRef = useRef([]);
 
@@ -106,13 +107,14 @@ export function useTravelAssistant() {
 
     let flights = [];
     let hotels = [];
+    let thingsToDo = [];
 
     try {
       console.log('[Search] Starting parallel flight + hotel search...');
       console.log('[Search] Source:', travelDetails.source, '→ Destination:', travelDetails.destination);
       console.log('[Search] Dates:', travelDetails.departureDate, '→', travelDetails.returnDate);
 
-      const [flightsRes, hotelsRes] = await Promise.allSettled([
+      const [flightsRes, hotelsRes, thingsToDoRes] = await Promise.allSettled([
         fetch('http://localhost:3001/api/search-flights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -133,6 +135,13 @@ export function useTravelAssistant() {
             checkOutDate: travelDetails.returnDate,
             travelers: travelDetails.travelers,
           })
+        }),
+        fetch('http://localhost:3001/api/search-things-to-do', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destination: travelDetails.destination,
+          })
         })
       ]);
 
@@ -141,8 +150,8 @@ export function useTravelAssistant() {
         flights = flightsData.flights || [];
         console.log('[Search] Flights:', flights.length, 'results');
       } else {
-        const reason = flightsRes.status === 'rejected' 
-          ? flightsRes.reason?.message 
+        const reason = flightsRes.status === 'rejected'
+          ? flightsRes.reason?.message
           : `HTTP ${flightsRes.value?.status}`;
         console.warn('[Search] Flights failed:', reason);
         // Try to log server error message
@@ -170,6 +179,23 @@ export function useTravelAssistant() {
           } catch (e) { /* ignore */ }
         }
       }
+
+      if (thingsToDoRes.status === 'fulfilled' && thingsToDoRes.value.ok) {
+        const thingsToDoData = await thingsToDoRes.value.json();
+        thingsToDo = thingsToDoData.thingsToDo || [];
+        console.log('[Search] Things to Do:', thingsToDo.length, 'results');
+      } else {
+        const reason = thingsToDoRes.status === 'rejected'
+          ? thingsToDoRes.reason?.message
+          : `HTTP ${thingsToDoRes.value?.status}`;
+        console.warn('[Search] Things to Do failed:', reason);
+        if (thingsToDoRes.status === 'fulfilled' && !thingsToDoRes.value.ok) {
+          try {
+            const errBody = await thingsToDoRes.value.json();
+            console.warn('[Search] Things to Do error detail:', errBody);
+          } catch (e) { /* ignore */ }
+        }
+      }
     } catch (err) {
       console.error('[Search] Network error:', err);
     }
@@ -179,6 +205,7 @@ export function useTravelAssistant() {
       ...travelDetails,
       flights,
       hotels,
+      thingsToDo,
     };
     const updatedState = {
       ...stateRef.current,
@@ -207,7 +234,7 @@ export function useTravelAssistant() {
           const result = await response.json();
           errDetail = `[Error ${result.code || 'N/A'}] ${result.details || result.error || errDetail}`;
         } catch (e) { /* fallback to status text */ }
-        
+
         console.error('[WhatsApp] Server returned error:', errDetail);
         throw new Error(errDetail);
       }
@@ -227,7 +254,7 @@ export function useTravelAssistant() {
     setIsProcessing(true);
     setError(null);
     const currentState = stateRef.current;
-    
+
     try {
       const SARVAM_KEY = import.meta.env.VITE_SARVAM_API_KEY;
       const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
@@ -237,7 +264,7 @@ export function useTravelAssistant() {
       }
 
       const groq = new Groq({ apiKey: GROQ_KEY, dangerouslyAllowBrowser: true });
-      const langCode = activeLanguage === 'en' ? 'en-IN' : 'ta-IN'; 
+      const langCode = activeLanguage === 'en' ? 'en-IN' : 'ta-IN';
 
       // =========================================================
       // Step A: Sarvam STT (The Ears)
@@ -253,21 +280,21 @@ export function useTravelAssistant() {
         headers: { 'api-subscription-key': SARVAM_KEY },
         body: formData
       });
-      
+
       if (!sttResponse.ok) {
         const errorText = await sttResponse.text();
         throw new Error(`Sarvam STT failed: ${sttResponse.status} - ${errorText}`);
       }
       const sttData = await sttResponse.json();
       const transcribedText = sttData.transcript || "";
-      
+
       if (!transcribedText.trim()) throw new Error("No speech detected.");
 
       // =========================================================
       // Step B: Groq API (The Brain)
       // =========================================================
       const step = getCurrentStep(currentState.travelDetails);
-      
+
       if (langCode === 'ta-IN') {
         historyRef.current.push({ role: 'system', content: 'Always extract values for "source", "destination", "travelers", and "activities" in Tamil.' });
       }
@@ -279,9 +306,9 @@ export function useTravelAssistant() {
         { role: 'system', content: SYSTEM_PROMPT },
         ...recentHistory,
         // Current turn: state context + user's new answer
-        { 
-          role: 'user', 
-          content: `CURRENT STEP: ${step}\nActive Language: ${activeLanguage}\n\nCurrent travelDetails:\n${JSON.stringify(currentState.travelDetails, null, 2)}\n\nUser's answer: "${transcribedText}"` 
+        {
+          role: 'user',
+          content: `CURRENT STEP: ${step}\nActive Language: ${activeLanguage}\n\nCurrent travelDetails:\n${JSON.stringify(currentState.travelDetails, null, 2)}\n\nUser's answer: "${transcribedText}"`
         }
       ];
 
@@ -294,7 +321,7 @@ export function useTravelAssistant() {
 
       const rawText = groqResponse.choices[0]?.message?.content || "{}";
       console.log(`[Step ${step}] Groq raw:`, rawText);
-      
+
       let parsedResponse;
       try {
         parsedResponse = JSON.parse(rawText);
@@ -316,12 +343,24 @@ export function useTravelAssistant() {
         travelDetails: {
           ...currentState.travelDetails,
           ...((updatedState && updatedState.travelDetails) || {}),
-          // Force flights/hotels to stay empty until real API populates them
+          // Force flights/hotels/thingsToDo to stay empty until real API populates them
           flights: [],
           hotels: [],
+          thingsToDo: [],
         }
       };
-      
+
+      // =========================================================
+      // Safety Net: If all fields are filled, force completion
+      // The LLM sometimes says "your itinerary will be sent" but
+      // forgets to flip status to "complete". This guard catches that.
+      // =========================================================
+      const completionStep = getCurrentStep(safeState.travelDetails);
+      if (completionStep === 7 && safeState.status !== 'complete') {
+        console.warn('[Safety] All 6 fields filled but LLM did not set status to "complete". Forcing completion.');
+        safeState.status = 'complete';
+      }
+
       commitState(safeState);
 
       // Append to history as proper role-alternating messages
@@ -382,17 +421,17 @@ export function useTravelAssistant() {
     setIsProcessing(true);
     setError(null);
     historyRef.current = [];
-    
+
     try {
       const SARVAM_KEY = import.meta.env.VITE_SARVAM_API_KEY;
       const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
       if (!SARVAM_KEY || !GROQ_KEY) throw new Error("Missing API Keys.");
-      
+
       const groq = new Groq({ apiKey: GROQ_KEY, dangerouslyAllowBrowser: true });
       const langCode = activeLanguage === 'en' ? 'en-IN' : 'ta-IN';
 
       // For the kickoff, we just need the greeting question
-      const kickoffPrompt = activeLanguage === 'en' 
+      const kickoffPrompt = activeLanguage === 'en'
         ? "Hello! Where are you travelling to?"
         : "வணக்கம்! நீங்கள் எங்கு பயணம் செல்ல விரும்புகிறீர்கள்?";
 
@@ -406,16 +445,16 @@ export function useTravelAssistant() {
           enable_preprocessing: true, model: 'bulbul:v3'
         })
       });
-      
+
       if (!ttsResponse.ok) throw new Error("TTS failed for kickoff.");
       const ttsData = await ttsResponse.json();
-      
+
       // Seed history with the opening exchange
       historyRef.current.push(
         { role: 'user', content: 'User said: "Hello, start planning."' },
         { role: 'assistant', content: JSON.stringify({ updatedState: INITIAL_STATE, botSpokenReply: kickoffPrompt }) }
       );
-      
+
       return { audioBase64: ttsData.audios?.[0] || null };
     } catch (err) {
       console.error('Kickoff Error:', err);

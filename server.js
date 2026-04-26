@@ -391,41 +391,154 @@ app.post('/api/search-hotels', async (req, res) => {
 
 
 // =========================================================
+// SerpApi: Things to Do Search
+// =========================================================
+app.post('/api/search-things-to-do', async (req, res) => {
+  try {
+    if (!SERPAPI_KEY || SERPAPI_KEY === 'your_serpapi_key_here') {
+      return res.status(500).json({ error: 'SERPAPI_KEY not configured in .env' });
+    }
+
+    const { destination } = req.body;
+
+    // =========================================================
+    // MOCK MODE: Bypass SerpApi if destination is "test" or "தேர்வு"
+    // =========================================================
+    const isTest = (destination && destination.toLowerCase().includes('test')) || 
+                   (destination && destination.includes('தேர்வு'));
+
+    if (isTest) {
+      console.log('[ThingsToDo] MOCK MODE ACTIVE');
+      return res.json({
+        thingsToDo: [
+          { 
+            name: "Vazhi Heritage Museum", 
+            description: "A beautiful heritage museum showcasing local culture and art.",
+            rating: "4.7",
+            reviews: "2,300",
+            link: "https://www.google.com/search?q=things+to+do"
+          },
+          { 
+            name: "Sunset Beach Walk", 
+            description: "Enjoy a scenic sunset walk along the pristine coastline.",
+            rating: "4.9",
+            reviews: "1,800",
+            link: "https://www.google.com/search?q=things+to+do"
+          },
+          {
+            name: "Local Street Food Tour",
+            description: "Taste authentic local delicacies from popular street vendors.",
+            rating: "4.6",
+            reviews: "950",
+            link: "https://www.google.com/search?q=things+to+do"
+          }
+        ]
+      });
+    }
+
+    const query = `Top things to do in ${destination}`;
+
+    const params = new URLSearchParams({
+      engine: 'google',
+      api_key: SERPAPI_KEY,
+      q: query,
+      hl: 'en',
+      gl: 'in',
+    });
+
+    console.log(`[ThingsToDo] Searching: ${query}`);
+
+    const response = await fetch(`https://serpapi.com/search?${params.toString()}`);
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('[ThingsToDo] SerpApi error:', data.error);
+      return res.status(502).json({ error: 'SerpApi returned an error', details: data.error });
+    }
+
+    let thingsToDo = [];
+
+    // Priority 1: Extract from top_sights (Google's curated sightseeing list)
+    if (data.top_sights && data.top_sights.sights && data.top_sights.sights.length > 0) {
+      thingsToDo = data.top_sights.sights.slice(0, 5).map(sight => ({
+        name: sight.title || 'Unknown Place',
+        description: sight.description || '',
+        rating: sight.rating ? `${sight.rating}` : 'N/A',
+        reviews: sight.reviews ? `${sight.reviews.toLocaleString('en-IN')}` : '',
+        thumbnail: sight.thumbnail || null,
+        link: sight.link || `https://www.google.com/search?q=${encodeURIComponent(sight.title + ' ' + destination)}`
+      }));
+    }
+
+    // Priority 2: Fallback to knowledge_graph or organic results
+    if (thingsToDo.length === 0 && data.organic_results) {
+      thingsToDo = data.organic_results.slice(0, 5).map(result => ({
+        name: result.title || 'Unknown Place',
+        description: result.snippet || '',
+        rating: 'N/A',
+        reviews: '',
+        thumbnail: result.thumbnail || null,
+        link: result.link || `https://www.google.com/search?q=${encodeURIComponent('things to do in ' + destination)}`
+      }));
+    }
+
+    console.log(`[ThingsToDo] Found ${thingsToDo.length} results`);
+    res.json({ thingsToDo });
+
+  } catch (error) {
+    console.error('[ThingsToDo] Server error:', error);
+    res.status(500).json({ error: 'Failed to search things to do', thingsToDo: [] });
+  }
+});
+
+
+// =========================================================
 // WhatsApp Delivery (Twilio) — Existing endpoint
 // =========================================================
 const formatWhatsAppMessage = (details) => {
-  const msg = `*VAZHI TRAVEL CONFIRMATION*
-  
-*From:* ${details.source || 'N/A'}
-*To:* ${details.destination || 'N/A'}
-*Dates:* ${details.departureDate || 'N/A'}${details.returnDate ? ` - ${details.returnDate}` : ''}
-*Travelers:* ${details.travelers || 'N/A'}
+  // Max out content while staying under Twilio's 1600 char WhatsApp limit
+  const topFlights = (details.flights || []).slice(0, 5);
+  const topHotels = (details.hotels || []).slice(0, 5);
+  const topThings = (details.thingsToDo || []).slice(0, 3);
 
-*Flights:*
-${details.flights && details.flights.length > 0 
-  ? details.flights.map((f, i) => `${i+1}. ${f.airline} (${f.price})\nLink: ${f.link}`).join('\n') 
+  const msg = `*✈️ VAZHI — Your Travel Itinerary*
+
+📍 *${details.source || 'N/A'}* → *${details.destination || 'N/A'}*
+📅 ${details.departureDate || 'N/A'}${details.returnDate ? ` — ${details.returnDate}` : ''}
+👥 ${details.travelers || 'N/A'}
+
+━━━━━━━━━━━━━━━
+
+✈️ *Top Flights:*
+${topFlights.length > 0 
+  ? topFlights.map((f, i) => `${i+1}. ${f.airline} — ${f.price}\n   ${f.link}`).join('\n') 
   : 'None found.'}
 
-*Hotels:*
-${details.hotels && details.hotels.length > 0 
-  ? details.hotels.map((h, i) => `${i+1}. ${h.name} (${h.price})\nLink: ${h.link}`).join('\n') 
+🏨 *Top Hotels:*
+${topHotels.length > 0 
+  ? topHotels.map((h, i) => `${i+1}. ${h.name} — ${h.price}\n   ${h.link}`).join('\n') 
   : 'None found.'}
 
-*Activities:* ${details.activities || 'N/A'}
+📍 *Things to Do:*
+${topThings.length > 0 
+  ? topThings.map((t, i) => `${i+1}. ${t.name}${t.rating && t.rating !== 'N/A' ? ` (${t.rating}★)` : ''}${t.description ? ` — ${t.description}` : ''}`).join('\n') 
+  : 'None found.'}
 
-Have a great trip!`;
+🎯 *Activities:* ${details.activities || 'N/A'}
+
+_Have a great trip! 🌍_`;
 
   console.log('[WhatsApp] Message Length:', msg.length);
   return msg;
 };
 
 app.post('/api/send-whatsapp', async (req, res) => {
+  let number = '';
   try {
     const travelDetails = req.body;
     console.log('[WhatsApp] Internal Payload Received:', JSON.stringify(travelDetails, null, 2));
 
     let rawNumber = travelDetails.whatsappNumber;
-    let number = '';
     
     if (rawNumber) {
       number = String(rawNumber).replace(/\D/g, '');
@@ -450,10 +563,19 @@ app.post('/api/send-whatsapp', async (req, res) => {
       }
     }
 
-    const messageBody = formatWhatsAppMessage(travelDetails);
+    let messageBody;
+    try {
+      messageBody = formatWhatsAppMessage(travelDetails);
+    } catch (fmtErr) {
+      console.error('[WhatsApp] Message formatting error:', fmtErr);
+      return res.status(500).json({
+        error: "Message Formatting Failed",
+        details: fmtErr.message,
+        code: "FORMAT_ERROR"
+      });
+    }
     
     console.log('[WhatsApp] Resolved Number String:', number);
-    console.log('[WhatsApp] Message Body:\n', messageBody);
     console.log('[WhatsApp] Message Length:', messageBody.length);
 
     const message = await client.messages.create({
@@ -468,14 +590,19 @@ app.post('/api/send-whatsapp', async (req, res) => {
   } catch (error) {
     console.error("[WhatsApp] TWILIO API ERROR:", error);
     
-    // Extract specific Twilio error details if they exist
+    // Extract specific Twilio error details
     const errorDetail = error.message || "Unknown Twilio error";
     const errorCode = error.code || "N/A";
+    const moreInfo = error.moreInfo || "";
+    const twilioStatus = error.status || "";
+
+    console.error(`[WhatsApp] Code: ${errorCode}, Status: ${twilioStatus}, MoreInfo: ${moreInfo}`);
 
     res.status(500).json({ 
       error: "WhatsApp Delivery Failed",
       details: errorDetail,
       code: errorCode,
+      moreInfo: moreInfo,
       recipient: number
     });
   }
