@@ -69,7 +69,13 @@ LANGUAGE & LOCALIZATION:
 - "whatsappNumber" MUST be stored as a string of numeric digits (e.g., "918089456382"). If the user speaks digits as words (e.g., "eight zero eight nine..."), you MUST translate them to digits. Remove all spaces, dashes, or non-numeric characters. Do not include "+" prefix.
 
 OUTPUT (strict JSON only, no extra text):
-{ "updatedState": { "status": "in_progress"|"complete", "travelDetails": { ...all fields preserved... } }, "botSpokenReply": "text" }`;
+{ "updatedState": { "status": "in_progress"|"complete", "travelDetails": { ...all fields preserved... } }, "botSpokenReply": "text" }
+
+VERSATILITY & ERROR CORRECTION:
+- Speech-to-Text often makes typos (e.g., "Chenney", "Modoray", "tomoro"). Intelligently infer the closest real-world city, location, or date and fix the spelling (e.g., "Chennai", "Madurai", "tomorrow").
+- Ignore conversational filler (e.g., "I think I want to go to...", "uhm", "maybe"). Extract ONLY the core value.
+- If the user provides an answer that implies a value (e.g., "just me and my wife" -> travelers: "2"), infer the correct final value.
+- If the transcription is completely garbled but sounds similar to a known city, use your best judgement to extract the correct city.`;
 
 export function useTravelAssistant() {
   const [assistantState, setAssistantState] = useState(INITIAL_STATE);
@@ -295,15 +301,17 @@ export function useTravelAssistant() {
       // =========================================================
       const step = getCurrentStep(currentState.travelDetails);
 
-      if (langCode === 'ta-IN') {
-        historyRef.current.push({ role: 'system', content: 'Always extract values for "source", "destination", "travelers", and "activities" in Tamil.' });
-      }
-
       // Build proper alternating message history for the LLM
       // Only keep last 4 messages (2 exchanges) to save tokens
       const recentHistory = historyRef.current.slice(-4);
+      
+      const systemPrompts = [{ role: 'system', content: SYSTEM_PROMPT }];
+      if (langCode === 'ta-IN') {
+        systemPrompts.push({ role: 'system', content: 'You are operating in TAMIL mode. The user may speak in either Tamil OR English (or a mix of both). The Speech-to-Text transcription might contain phonetic errors, misspelled words, or English loanwords. Be extremely intelligent: logically infer the correct Indian city, date, or number regardless of whether they spoke English or Tamil. When extracting NEW information for the CURRENT STEP, if the field is "source", "destination", "travelers", or "activities", you MUST translate the answer to Tamil and store the value cleanly in Tamil script. All of your replies must also be in Tamil. CRITICAL: NEVER modify, reset, or translate fields that are already filled in the current travelDetails! Keep previously filled fields EXACTLY as they are.' });
+      }
+
       const messages = [
-        { role: 'system', content: SYSTEM_PROMPT },
+        ...systemPrompts,
         ...recentHistory,
         // Current turn: state context + user's new answer
         {
@@ -314,7 +322,7 @@ export function useTravelAssistant() {
 
       const groqResponse = await groq.chat.completions.create({
         messages,
-        model: 'llama-3.1-8b-instant',
+        model: 'llama-3.3-70b-versatile',
         response_format: { type: 'json_object' },
         max_tokens: 1200,
       });

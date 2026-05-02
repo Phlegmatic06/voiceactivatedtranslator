@@ -135,98 +135,16 @@ function App() {
         }
       };
 
-      // --- VAD (Voice Activity Detection) Setup ---
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.minDecibels = -50;
-      analyser.smoothingTimeConstant = 0.2;
-      source.connect(analyser);
-
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      // --- VAD State ---
-      let speechConfirmed = false;
-      let consecutiveLoudFrames = 0;
-      const LOUD_FRAMES_REQUIRED = 5;
-      let speechStartTimestamp = null;
-      const MIN_SPEECH_DURATION = 1500;
-      let silenceTimer = null;
-      let isChecking = true;
-      const monitoringStartTime = Date.now();
-      const DEBOUNCE_MS = 1000;
-
-      const checkAudioLevel = () => {
-        if (!isChecking) return;
-        analyser.getByteFrequencyData(dataArray);
-        
-        // Debounce: ignore first second (TTS echo, mic pop)
-        if (Date.now() - monitoringStartTime < DEBOUNCE_MS) {
-          requestAnimationFrame(checkAudioLevel);
-          return;
-        }
-        
-        // Count frequency bins above energy threshold
-        let loudBins = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          if (dataArray[i] > 30) loudBins++;
-        }
-        const isSilence = loudBins < 3;
-
-        if (!isSilence) {
-          consecutiveLoudFrames++;
-          if (!speechConfirmed && consecutiveLoudFrames >= LOUD_FRAMES_REQUIRED) {
-            speechConfirmed = true;
-            speechStartTimestamp = Date.now();
-          }
-          if (silenceTimer) {
-            clearTimeout(silenceTimer);
-            silenceTimer = null;
-          }
-        } else {
-          consecutiveLoudFrames = 0;
-          if (speechConfirmed && !silenceTimer) {
-            const elapsed = Date.now() - speechStartTimestamp;
-            const remainingMinDuration = Math.max(0, MIN_SPEECH_DURATION - elapsed);
-            silenceTimer = setTimeout(() => {
-              if (mediaRecorder.state === "recording") {
-                isChecking = false;
-                mediaRecorder.stop();
-              }
-            }, remainingMinDuration + 4000);
-          }
-        }
-
-        if (isChecking) {
-          requestAnimationFrame(checkAudioLevel);
-        }
-      };
-      
-      // Begin monitoring
-      requestAnimationFrame(checkAudioLevel);
-      // -------------------------------------------
-
       mediaRecorder.onstop = async () => {
-        isChecking = false;
-        if (silenceTimer) clearTimeout(silenceTimer);
-        if (audioContext.state !== 'closed') {
-          audioContext.close().catch(console.error);
-        }
-        
         // Build the audio blob once the recording stream is cut
         const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || 'audio/wav' });
         
         // Ensure browser microphone tracks are properly released
         stream.getTracks().forEach((track) => track.stop());
 
-        // QUALITY GATE: If no real speech was confirmed, or blob is tiny,
-        // skip the entire pipeline and just re-open the mic
-        if (!speechConfirmed || audioBlob.size < 2000) {
-          console.log("VAD: No real speech detected, re-opening mic...");
+        // QUALITY GATE: If blob is tiny, skip the entire pipeline and just re-open the mic
+        if (audioBlob.size < 2000) {
+          console.log("Audio blob too small, likely accidental. Re-opening mic...");
           startRecording();
           return;
         }

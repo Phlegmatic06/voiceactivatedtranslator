@@ -252,7 +252,7 @@ app.post('/api/search-flights', async (req, res) => {
     // Extract and normalize flight data
     const rawFlights = [...(data.best_flights || []), ...(data.other_flights || [])];
 
-    const flights = rawFlights.slice(0, 5).map(flightGroup => {
+    const flights = rawFlights.slice(0, 3).map(flightGroup => {
       const legs = flightGroup.flights || [];
       const firstLeg = legs[0] || {};
       const lastLeg = legs[legs.length - 1] || {};
@@ -362,7 +362,7 @@ app.post('/api/search-hotels', async (req, res) => {
 
     const rawHotels = data.properties || [];
 
-    const hotels = rawHotels.slice(0, 5).map(hotel => {
+    const hotels = rawHotels.slice(0, 3).map(hotel => {
       const rateInfo = hotel.rate_per_night || {};
       return {
         name: hotel.name || 'Unknown Hotel',
@@ -460,7 +460,7 @@ app.post('/api/search-things-to-do', async (req, res) => {
 
     // Priority 1: Extract from top_sights (Google's curated sightseeing list)
     if (data.top_sights && data.top_sights.sights && data.top_sights.sights.length > 0) {
-      thingsToDo = data.top_sights.sights.slice(0, 5).map(sight => ({
+      thingsToDo = data.top_sights.sights.slice(0, 4).map(sight => ({
         name: sight.title || 'Unknown Place',
         description: sight.description || '',
         rating: sight.rating ? `${sight.rating}` : 'N/A',
@@ -472,7 +472,7 @@ app.post('/api/search-things-to-do', async (req, res) => {
 
     // Priority 2: Fallback to knowledge_graph or organic results
     if (thingsToDo.length === 0 && data.organic_results) {
-      thingsToDo = data.organic_results.slice(0, 5).map(result => ({
+      thingsToDo = data.organic_results.slice(0, 4).map(result => ({
         name: result.title || 'Unknown Place',
         description: result.snippet || '',
         rating: 'N/A',
@@ -497,11 +497,11 @@ app.post('/api/search-things-to-do', async (req, res) => {
 // =========================================================
 const formatWhatsAppMessage = (details) => {
   // Max out content while staying under Twilio's 1600 char WhatsApp limit
-  const topFlights = (details.flights || []).slice(0, 5);
-  const topHotels = (details.hotels || []).slice(0, 5);
-  const topThings = (details.thingsToDo || []).slice(0, 3);
+  const topFlights = (details.flights || []).slice(0, 3);
+  const topHotels = (details.hotels || []).slice(0, 3);
+  const topThings = (details.thingsToDo || []).slice(0, 4);
 
-  const msg = `*✈️ VAZHI — Your Travel Itinerary*
+  let msg = `*✈️ VAZHI — Your Travel Itinerary*
 
 📍 *${details.source || 'N/A'}* → *${details.destination || 'N/A'}*
 📅 ${details.departureDate || 'N/A'}${details.returnDate ? ` — ${details.returnDate}` : ''}
@@ -529,6 +529,12 @@ ${topThings.length > 0
 _Have a great trip! 🌍_`;
 
   console.log('[WhatsApp] Message Length:', msg.length);
+  
+  if (msg.length > 1600) {
+    console.warn('[WhatsApp] Message exceeds 1600 chars! Truncating to fit limit.');
+    msg = msg.substring(0, 1595) + '...';
+  }
+
   return msg;
 };
 
