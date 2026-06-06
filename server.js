@@ -41,7 +41,7 @@ const CITY_TO_IATA = {
   'patna': 'PAT', 'பாட்னா': 'PAT',
   'coimbatore': 'CJB', 'கோயம்புத்தூர்': 'CJB', 'கோவை': 'CJB',
   'trivandrum': 'TRV', 'thiruvananthapuram': 'TRV', 'திருவனந்தபுரம்': 'TRV',
-  
+
   // Tamil Nadu Cities (High priority for this app)
   'madurai': 'IXM', 'மதுரை': 'IXM',
   'trichy': 'TRZ', 'tiruchirappalli': 'TRZ', 'திருச்சி': 'TRZ',
@@ -77,7 +77,7 @@ async function resolveLocationId(cityName) {
 
   // 1. Check Hardcoded Fast Path
   if (CITY_TO_IATA[normalized]) return CITY_TO_IATA[normalized];
-  
+
   // Try partial match in dictionary
   for (const [key, code] of Object.entries(CITY_TO_IATA)) {
     if (normalized.includes(key)) return code;
@@ -124,7 +124,7 @@ function parseDate(dateStr) {
 
   // Strip ordinal suffixes: "10th April" → "10 April", "April 3rd" → "April 3"
   let cleaned = dateStr.replace(/(\d+)(st|nd|rd|th)\b/gi, '$1').trim();
-  
+
   // Handle DD/MM/YYYY or DD-MM-YYYY (common Indian format)
   const ddmmyyyy = cleaned.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (ddmmyyyy) {
@@ -134,7 +134,7 @@ function parseDate(dateStr) {
 
   // Try parsing the cleaned string
   let parsed = new Date(cleaned);
-  
+
   // If that fails, try prepending a month name hint
   // "10 April" parses fine, but "April 2026 10" might not
   if (isNaN(parsed.getTime())) {
@@ -170,20 +170,20 @@ app.post('/api/search-flights', async (req, res) => {
     }
 
     const { source, destination, departureDate, returnDate, travelers } = req.body;
-    
+
     // =========================================================
     // MOCK MODE: Bypass SerpApi if destination is "test" or "தேர்வு"
     // =========================================================
-    const isTest = (destination && destination.toLowerCase().includes('test')) || 
-                   (destination && destination.includes('தேர்வு'));
+    const isTest = (destination && destination.toLowerCase().includes('test')) ||
+      (destination && destination.includes('தேர்வு'));
 
     if (isTest) {
       console.log('[Flights] MOCK MODE ACTIVE');
       return res.json({
         flights: [
-          { 
-            airline: "Vazhi Air", 
-            price: "₹12,450 (Mock)", 
+          {
+            airline: "Vazhi Air",
+            price: "₹12,450 (Mock)",
             link: "https://www.google.com/travel/flights",
             departure: "10:30 AM",
             arrival: "01:15 PM",
@@ -191,9 +191,9 @@ app.post('/api/search-flights', async (req, res) => {
             type: "Direct",
             departureAirport: "Test Field"
           },
-          { 
-            airline: "QuickJet", 
-            price: "₹14,200 (Mock)", 
+          {
+            airline: "QuickJet",
+            price: "₹14,200 (Mock)",
             link: "https://www.google.com/travel/flights",
             departure: "04:00 PM",
             arrival: "06:45 PM",
@@ -210,14 +210,14 @@ app.post('/api/search-flights', async (req, res) => {
       resolveLocationId(source),
       resolveLocationId(destination)
     ]);
-    
+
     const outboundDate = parseDate(departureDate);
     const inboundDate = parseDate(returnDate);
 
     if (!departureId || !arrivalId || !outboundDate) {
-      return res.status(400).json({ 
-        error: 'Could not resolve airports or dates', 
-        details: { departureId, arrivalId, outboundDate } 
+      return res.status(400).json({
+        error: 'Could not resolve airports or dates',
+        details: { departureId, arrivalId, outboundDate }
       });
     }
 
@@ -300,23 +300,23 @@ app.post('/api/search-hotels', async (req, res) => {
     // =========================================================
     // MOCK MODE: Bypass SerpApi if destination is "test" or "தேர்வு"
     // =========================================================
-    const isTest = (destination && destination.toLowerCase().includes('test')) || 
-                   (destination && destination.includes('தேர்வு'));
+    const isTest = (destination && destination.toLowerCase().includes('test')) ||
+      (destination && destination.includes('தேர்வு'));
 
     if (isTest) {
       console.log('[Hotels] MOCK MODE ACTIVE');
       return res.json({
         hotels: [
-          { 
-            name: "Vazhi Grand Plaza", 
-            price: "₹4,500/night (Mock)", 
+          {
+            name: "Vazhi Grand Plaza",
+            price: "₹4,500/night (Mock)",
             link: "https://www.google.com/search?q=hotels",
             rating: "4.8",
             reviews: "1,200"
           },
-          { 
-            name: "Comfort Test Suites", 
-            price: "₹3,200/night (Mock)", 
+          {
+            name: "Comfort Test Suites",
+            price: "₹3,200/night (Mock)",
             link: "https://www.google.com/search?q=hotels",
             rating: "4.5",
             reviews: "850"
@@ -404,22 +404,22 @@ app.post('/api/search-things-to-do', async (req, res) => {
     // =========================================================
     // MOCK MODE: Bypass SerpApi if destination is "test" or "தேர்வு"
     // =========================================================
-    const isTest = (destination && destination.toLowerCase().includes('test')) || 
-                   (destination && destination.includes('தேர்வு'));
+    const isTest = (destination && destination.toLowerCase().includes('test')) ||
+      (destination && destination.includes('தேர்வு'));
 
     if (isTest) {
       console.log('[ThingsToDo] MOCK MODE ACTIVE');
       return res.json({
         thingsToDo: [
-          { 
-            name: "Vazhi Heritage Museum", 
+          {
+            name: "Vazhi Heritage Museum",
             description: "A beautiful heritage museum showcasing local culture and art.",
             rating: "4.7",
             reviews: "2,300",
             link: "https://www.google.com/search?q=things+to+do"
           },
-          { 
-            name: "Sunset Beach Walk", 
+          {
+            name: "Sunset Beach Walk",
             description: "Enjoy a scenic sunset walk along the pristine coastline.",
             rating: "4.9",
             reviews: "1,800",
@@ -510,26 +510,26 @@ const formatWhatsAppMessage = (details) => {
 ━━━━━━━━━━━━━━━
 
 ✈️ *Top Flights:*
-${topFlights.length > 0 
-  ? topFlights.map((f, i) => `${i+1}. ${f.airline} — ${f.price}\n   ${f.link}`).join('\n') 
-  : 'None found.'}
+${topFlights.length > 0
+      ? topFlights.map((f, i) => `${i + 1}. ${f.airline} — ${f.price}\n   ${f.link}`).join('\n')
+      : 'None found.'}
 
 🏨 *Top Hotels:*
-${topHotels.length > 0 
-  ? topHotels.map((h, i) => `${i+1}. ${h.name} — ${h.price}\n   ${h.link}`).join('\n') 
-  : 'None found.'}
+${topHotels.length > 0
+      ? topHotels.map((h, i) => `${i + 1}. ${h.name} — ${h.price}\n   ${h.link}`).join('\n')
+      : 'None found.'}
 
 📍 *Things to Do:*
-${topThings.length > 0 
-  ? topThings.map((t, i) => `${i+1}. ${t.name}${t.rating && t.rating !== 'N/A' ? ` (${t.rating}★)` : ''}${t.description ? ` — ${t.description}` : ''}`).join('\n') 
-  : 'None found.'}
+${topThings.length > 0
+      ? topThings.map((t, i) => `${i + 1}. ${t.name}${t.rating && t.rating !== 'N/A' ? ` (${t.rating}★)` : ''}${t.description ? ` — ${t.description}` : ''}`).join('\n')
+      : 'None found.'}
 
 🎯 *Activities:* ${details.activities || 'N/A'}
 
 _Have a great trip! 🌍_`;
 
   console.log('[WhatsApp] Message Length:', msg.length);
-  
+
   if (msg.length > 1600) {
     console.warn('[WhatsApp] Message exceeds 1600 chars! Truncating to fit limit.');
     msg = msg.substring(0, 1595) + '...';
@@ -545,16 +545,16 @@ app.post('/api/send-whatsapp', async (req, res) => {
     console.log('[WhatsApp] Internal Payload Received:', JSON.stringify(travelDetails, null, 2));
 
     let rawNumber = travelDetails.whatsappNumber;
-    
+
     if (rawNumber) {
       number = String(rawNumber).replace(/\D/g, '');
     }
 
     if (!number || number.length < 10) {
       console.error('[WhatsApp] FAIL: Normalized number too short or empty:', number);
-      return res.status(400).json({ 
-        error: "Invalid WhatsApp number", 
-        details: `The AI extracted "${rawNumber || 'nothing'}" as your number. Is this right? Please say your 10-digit number again.` 
+      return res.status(400).json({
+        error: "Invalid WhatsApp number",
+        details: `The AI extracted "${rawNumber || 'nothing'}" as your number. Is this right? Please say your 10-digit number again.`
       });
     }
 
@@ -580,7 +580,7 @@ app.post('/api/send-whatsapp', async (req, res) => {
         code: "FORMAT_ERROR"
       });
     }
-    
+
     console.log('[WhatsApp] Resolved Number String:', number);
     console.log('[WhatsApp] Message Length:', messageBody.length);
 
@@ -595,7 +595,7 @@ app.post('/api/send-whatsapp', async (req, res) => {
 
   } catch (error) {
     console.error("[WhatsApp] TWILIO API ERROR:", error);
-    
+
     // Extract specific Twilio error details
     const errorDetail = error.message || "Unknown Twilio error";
     const errorCode = error.code || "N/A";
@@ -604,7 +604,7 @@ app.post('/api/send-whatsapp', async (req, res) => {
 
     console.error(`[WhatsApp] Code: ${errorCode}, Status: ${twilioStatus}, MoreInfo: ${moreInfo}`);
 
-    res.status(500).json({ 
+    res.status(500).json({
       error: "WhatsApp Delivery Failed",
       details: errorDetail,
       code: errorCode,
